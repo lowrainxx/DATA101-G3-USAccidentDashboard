@@ -7,7 +7,7 @@ import pandas as pd
 register_page(__name__, path='/')
 
 # Dataset
-# df = pd.read_csv('dataset/us_accidents_cut.csv')
+# df = pd.read_csv('dataset/us_accidents_cleaned.csv')
 df = px.data.iris() # Sample only
 
 # Figures
