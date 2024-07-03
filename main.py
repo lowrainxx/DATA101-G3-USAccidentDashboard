@@ -14,6 +14,7 @@ app.layout = html.Div([
         dcc.Link('Home', href='/', className='nav-link'),
         dcc.Link('Weather', href='/weather', className='nav-link'),
         dcc.Link('POI', href='/poi', className='nav-link'),
+        dcc.Link('Database', href='/database', className='nav-link')
     ], className='navbar'),
     
     dash.page_container,  # Loads page starting here

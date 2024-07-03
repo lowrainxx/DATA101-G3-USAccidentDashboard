@@ -7,18 +7,39 @@ import pandas as pd
 register_page(__name__, path='/')
 
 # Dataset
-# df = pd.read_csv('dataset/us_accidents_cleaned.csv')
-df = px.data.iris() # Sample only
+# df = pd.read_csv('dataset/us_accidents_cut.csv')
+try:
+    df = pd.read_csv('dataset/us_accidents_cut.csv')
+    if df.empty:
+        raise ValueError("The CSV file is empty")
+except Exception as e:
+    raise RuntimeError(f"Error loading CSV file: {e}")
+# df = px.data.iris() # Sample only
 
 # Figures
-fig1 = px.scatter(df, x='sepal_length', y='sepal_width', color='species', title='Figure 1')
-fig2 = px.scatter(df, x='petal_length', y='petal_width', color='species', title='Figure 2')
+# Chloromap
+accident_counts = df['State'].value_counts().reset_index()
+accident_counts.columns = ['State', 'accident_count']
+
+chloromap = px.choropleth(df,
+                    locations='State',
+                    locationmode="USA-states",
+                    color='accident_count',
+                    scope="usa",
+                    title="Chloropleth Map",
+                    labels={'accident_count': 'Number of Accidents'},
+                    color_continuous_scale="Viridis")
+
+# treemap = px.treemap(df,
+#                  path=['State', 'City'],
+#                  values='value',
+#                  title='Treemap')
 
 # Define the layout for the home page
 layout = html.Div([
     html.H1('Home Page'),
     html.Div(children=[
-        dcc.Graph(id='graph-1', figure=fig1, style={'flex': 1}),
-        dcc.Graph(id='graph-2', figure=fig2, style={'flex': 1})
+        dcc.Graph(id='graph-1', figure=chloromap, style={'flex': 1}),
+        dcc.Graph(id='graph-1', figure=treemap, style={'flex': 1})
     ], style={'display': 'flex', 'flex-wrap': 'wrap'})
 ])
