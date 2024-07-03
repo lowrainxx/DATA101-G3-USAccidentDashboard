@@ -30,7 +30,7 @@ fig = px.choropleth(df1,
 # Define the layout for the home page
 layout = html.Div([
     html.Div([
-        html.H1('US Accidents'),
+        html.H1('Weather Page'),
         dcc.Graph(figure=fig),
     ], className='main-content')
 ])
