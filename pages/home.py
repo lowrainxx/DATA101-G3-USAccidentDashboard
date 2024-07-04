@@ -7,9 +7,9 @@ import pandas as pd
 register_page(__name__, path='/')
 
 # Dataset
-# df = pd.read_csv('dataset/us_accidents_cut.csv')
+# df = pd.read_csv('../dataset/us_accidents_cut.csv')
 try:
-    df = pd.read_csv('dataset/us_accidents_cut.csv')
+    df = pd.read_csv('../dataset/us_accidents_cut.csv')
     if df.empty:
         raise ValueError("The CSV file is empty")
 except Exception as e:
