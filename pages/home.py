@@ -2,14 +2,18 @@ import dash
 from dash import dcc, html, register_page
 import plotly.express as px
 import pandas as pd
+import os
 
 # Register Home page
 register_page(__name__, path='/')
 
+current_directory = os.path.dirname(__file__)
+csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_clean.csv')
+
 # Dataset
-# df = pd.read_csv('../dataset/us_accidents_cut.csv')
 try:
-    df = pd.read_csv('../dataset/us_accidents_cut.csv')
+    # df = pd.read_csv('../dataset/us_accidents_clean.csv')
+    df = pd.read_csv(csv_file_path)
     if df.empty:
         raise ValueError("The CSV file is empty")
 except Exception as e:
@@ -21,14 +25,19 @@ except Exception as e:
 accident_counts = df['State'].value_counts().reset_index()
 accident_counts.columns = ['State', 'accident_count']
 
-chloromap = px.choropleth(df,
-                    locations='State',
-                    locationmode="USA-states",
-                    color='accident_count',
-                    scope="usa",
-                    title="Chloropleth Map",
-                    labels={'accident_count': 'Number of Accidents'},
-                    color_continuous_scale="Viridis")
+severity_counts = df['Severity'].value_counts().reset_index()
+severity_counts.columns = ['Severity', 'count']
+
+barsample = px.bar(severity_counts, x='Severity', y='count', title='Accidents by Severity')
+
+# chloromap = px.choropleth(df,
+#                     locations='State',
+#                     locationmode="USA-states",
+#                     color='Severity',
+#                     scope="usa",
+#                     title="Chloropleth Map",
+#                     labels={'accident_count': 'Number of Accidents'},
+#                     color_continuous_scale="Viridis")
 
 # treemap = px.treemap(df,
 #                  path=['State', 'City'],
@@ -39,7 +48,8 @@ chloromap = px.choropleth(df,
 layout = html.Div([
     html.H1('Home Page'),
     html.Div(children=[
-        dcc.Graph(id='graph-1', figure=chloromap, style={'flex': 1}),
-        dcc.Graph(id='graph-1', figure=treemap, style={'flex': 1})
+        dcc.Graph(id='severity-bar-chart', figure=barsample)
+        # dcc.Graph(id='graph-1', figure=chloromap, style={'flex': 1})
+        # dcc.Graph(id='graph-1', figure=treemap, style={'flex': 1})
     ], style={'display': 'flex', 'flex-wrap': 'wrap'})
 ])
