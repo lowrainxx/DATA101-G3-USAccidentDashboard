@@ -2,7 +2,7 @@
 import dash
 from dash import dcc, html, register_page
 import plotly.express as px
-import pandas as pd
+import dask.dataframe as dd
 import os
 import logging
 
@@ -15,18 +15,15 @@ register_page(__name__, path='/')
 current_directory = os.path.dirname(__file__)
 csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_cut.csv')
 
-# Load dataset in chunks
+# Load dataset using Dask
 def load_data(file_path):
-    logging.info("Loading data in chunks...")
-    chunk_size = 100000  # chunk size based on memory availability
-    chunks = []
+    logging.info("Loading data using Dask...")
     try:
-        for chunk in pd.read_csv(file_path, chunksize=chunk_size, engine='python'):
-            chunks.append(chunk)
-        df = pd.concat(chunks, ignore_index=True)
+        ddf = dd.read_csv(file_path)
+        df = ddf.compute()
         if df.empty:
             raise ValueError("The CSV file is empty")
-        logging.info("Data loaded successfully.")
+        logging.info("Data loaded successfully using Dask.")
         return df
     except Exception as e:
         logging.error(f"Error loading CSV file: {e}")
