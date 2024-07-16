@@ -18,7 +18,7 @@ csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_c
 # Load dataset in chunks
 def load_data(file_path):
     logging.info("Loading data in chunks...")
-    chunk_size = 100000  # Adjust chunk size based on memory availability
+    chunk_size = 100000  # chunk size based on memory availability
     chunks = []
     try:
         for chunk in pd.read_csv(file_path, chunksize=chunk_size, engine='python'):
