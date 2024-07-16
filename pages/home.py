@@ -8,7 +8,7 @@ import os
 register_page(__name__, path='/')
 
 current_directory = os.path.dirname(__file__)
-csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_clean.csv')
+csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_cut.csv')
 
 # Dataset
 try:
