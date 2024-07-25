@@ -6,6 +6,7 @@ import dask.dataframe as dd
 import os
 import logging
 from dash.dependencies import Input, Output
+import pandas as pd
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,18 @@ severity_counts.columns = ['Severity', 'count']
 
 barsample = px.bar(severity_counts, x='Severity', y='count', title='Accidents by Severity')
 
+#stacked bar chart
+severity_weather = df.groupby(['Severity', 'Weather_Condition']).size().reset_index(name='Count')
+
+stacked_bar = px.bar(
+    severity_weather,
+    x='Severity',
+    y='Count',
+    color='Weather_Condition',
+    title='Number of Accidents by Severity and Weather Conditions',
+    labels={'Count': 'Number of Accidents'},
+)
+
 # Define the layout for the home page
 layout = html.Div([
     html.H1('Home Page'),
@@ -73,7 +86,13 @@ layout = html.Div([
     ),
     html.Div(children=[
         dcc.Graph(id='graph')
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'})
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
+
+    # stacked bar chart for severity and weather conditions
+    html.H2('Accidents by Severity and Weather Conditions'),
+    html.Div(children=[
+        dcc.Graph(id='severity-weather-stacked-bar', figure=stacked_bar)
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
 ])
 
 # Callback to update graph
