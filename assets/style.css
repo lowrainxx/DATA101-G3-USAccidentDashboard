@@ -34,3 +34,9 @@
     bottom: 0;
     width: 100%;
 }
+
+/* Slider */
+
+.date-range-slider {
+    width: 80%;
+}

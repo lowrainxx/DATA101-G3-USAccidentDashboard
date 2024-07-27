@@ -21,8 +21,8 @@ filtered_df = pd.DataFrame({
     'State': ['CA', 'CA', 'TX', 'TX', 'NY', 'NY', 'FL', 'FL', 'IL', 'IL'],
     'City': ['Los Angeles', 'San Francisco', 'Houston', 'Dallas', 'New York', 'Buffalo', 'Miami', 'Orlando', 'Chicago', 'Springfield'],
     'Counts': [100, 150, 200, 250, 300, 350, 400, 450, 500, 550],
-    'Start_Time': pd.date_range(start='1/1/2020', periods=10, freq='M'),
-    'End_Time': pd.date_range(start='1/1/2021', periods=10, freq='M')
+    'Start_Time': pd.date_range(start='1/1/2020', periods=10, freq='ME'),
+    'End_Time': pd.date_range(start='1/1/2021', periods=10, freq='ME')
 })
 
 # Initialize the Dash app

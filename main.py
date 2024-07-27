@@ -13,7 +13,7 @@ app.layout = html.Div([
     html.Nav([
         dcc.Link('Home', href='/', className='nav-link'),
         dcc.Link('Weather', href='/weather', className='nav-link'),
-        dcc.Link('POI', href='/poi', className='nav-link'),
+        # dcc.Link('POI', href='/poi', className='nav-link'),
         dcc.Link('Database', href='/database', className='nav-link')
     ], className='navbar'),
     
@@ -24,3 +24,4 @@ app.layout = html.Div([
 
 if __name__ == '__main__':
     server.run(debug=True)
+    
