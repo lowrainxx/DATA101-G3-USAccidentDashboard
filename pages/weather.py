@@ -126,18 +126,15 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if triggered_id == 'weather-date-range-slider':
-        start_date = df['Start_Time'].min() + pd.Timedelta(days=slider_range[0])
-        end_date = df['Start_Time'].min() + pd.Timedelta(days=slider_range[1])
-    elif triggered_id == 'weather-start-date-picker':
-        start_date = pd.to_datetime(start_date)
-        end_date = pd.to_datetime(end_date)
-        slider_range[0] = (start_date - df['Start_Time'].min()).days
-    elif triggered_id == 'weather-end-date-picker':
-        start_date = pd.to_datetime(start_date)
-        end_date = pd.to_datetime(end_date)
-        slider_range[1] = (end_date - df['Start_Time'].min()).days
+        start_date = (df['Start_Time'].min() + pd.Timedelta(days=slider_range[0])).date()
+        end_date = (df['Start_Time'].min() + pd.Timedelta(days=slider_range[1])).date()
+    elif triggered_id in ['weather-start-date-picker', 'weather-end-date-picker']:
+        start_date = pd.to_datetime(start_date).date()
+        end_date = pd.to_datetime(end_date).date()
+        slider_range[0] = (pd.to_datetime(start_date) - df['Start_Time'].min()).days
+        slider_range[1] = (pd.to_datetime(end_date) - df['Start_Time'].min()).days
 
-    return start_date.date(), end_date.date(), slider_range
+    return start_date, end_date, slider_range
 
 # Callback to update graphs based on date range
 @dash.callback(
