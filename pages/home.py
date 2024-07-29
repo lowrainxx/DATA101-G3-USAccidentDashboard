@@ -2,76 +2,123 @@
 import dash
 from dash import dcc, html, register_page
 import plotly.express as px
-import dask.dataframe as dd
-import os
 import logging
 from dash.dependencies import Input, Output, State
 import pandas as pd
+from data import df
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
+logging.info('Reading home.py')
+
 # Register Home page
 register_page(__name__, path='/')
 
-current_directory = os.path.dirname(__file__)
-csv_file_path = os.path.join(current_directory, '..', 'dataset', 'us_accidents_clean.csv')
+logging.info('Registered home.py')
 
-# Load dataset using Dask
-def load_data(file_path):
-    logging.info("Loading data using Dask...")
-    try:
-        ddf = dd.read_csv(file_path)
-        df = ddf.compute()
-        if df.empty:
-            raise ValueError("The CSV file is empty")
-        logging.info("Data loaded successfully using Dask.")
-        return df
-    except Exception as e:
-        logging.error(f"Error loading CSV file: {e}")
-        raise RuntimeError(f"Error loading CSV file: {e}")
+# Function to prepare data
+def prepare_data():
+    if df is None:
+        raise ValueError("home.py : DataFrame is not loaded.")
+    
+    df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+    df['End_Time'] = pd.to_datetime(df['End_Time'])
 
-df = load_data(csv_file_path)
+    byhour = df['Hour'].value_counts().reset_index()
+    byhour.columns = ['Hour', 'Count']
+    bymonth = df['Month'].value_counts().reset_index()
+    bymonth.columns = ['Month', 'Count']
+    byday = df['Day'].value_counts().reset_index()
+    byday.columns = ['Day', 'Count']
 
-# Convert 'Start_Time' to datetime
-df['Start_Time'] = pd.to_datetime(df['Start_Time'])
-df['End_Time'] = pd.to_datetime(df['End_Time'])
+    byhour = byhour.sort_values(by="Hour")
+    bymonth = bymonth.sort_values(by="Month")
+    byday = byday.sort_values(by="Day")
 
-# Line Chart 
-byhour = df['Hour'].value_counts().reset_index()
-byhour.columns = ['Hour', 'Count']
-bymonth = df['Month'].value_counts().reset_index()
-bymonth.columns = ['Month', 'Count']
-byday = df['Day'].value_counts().reset_index()
-byday.columns = ['Day', 'Count']
+    severity_counts = df['Severity'].value_counts().reset_index()
+    severity_counts.columns = ['Severity', 'count']
 
-byhour = byhour.sort_values(by="Hour")
-bymonth = bymonth.sort_values(by="Month")
-byday = byday.sort_values(by="Day")
+    severity_weather = df.groupby(['Severity', 'Weather_Condition']).size().reset_index(name='Count')
 
-accident_counts = df['State'].value_counts().reset_index()
-accident_counts.columns = ['State', 'accident_count']
+    stacked_bar = px.bar(
+        severity_weather,
+        x='Severity',
+        y='Count',
+        color='Weather_Condition',
+        title='Number of Accidents by Severity and Weather Conditions',
+        labels={'Count': 'Number of Accidents'},
+    )
+    return df, stacked_bar, byhour, bymonth, byday
 
-severity_counts = df['Severity'].value_counts().reset_index()
-severity_counts.columns = ['Severity', 'count']
+# Prepare data once and reuse in callbacks
+df, stacked_bar, byhour, bymonth, byday = prepare_data()
 
-barsample = px.bar(severity_counts, x='Severity', y='count', title='[SAMPLE] Accidents by Severity')
+start_date = df['Start_Time'].min()
+end_date = df['End_Time'].max()
+date_range = pd.date_range(start=start_date, end=end_date, freq='6ME')
 
-#stacked bar chart
-severity_weather = df.groupby(['Severity', 'Weather_Condition']).size().reset_index(name='Count')
+# Choropleth map based on accident counts per state
+def create_choropleth(filtered_df):
+    accident_counts = filtered_df['State'].value_counts().reset_index()
+    accident_counts.columns = ['State', 'Accident_Count']
 
-stacked_bar = px.bar(
-    severity_weather,
-    x='Severity',
-    y='Count',
-    color='Weather_Condition',
-    title='Number of Accidents by Severity and Weather Conditions',
-    labels={'Count': 'Number of Accidents'},
-)
+    fig_choropleth = px.choropleth(
+        accident_counts,
+        locations='State',
+        locationmode="USA-states",
+        color='Accident_Count',
+        scope="usa",
+        title="Accidents by State",
+        labels={'Accident_Count': 'Accident Count'},
+        color_continuous_scale="Viridis"
+    )
+    fig_choropleth.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)') # Transparent background
+    return fig_choropleth
+
+# Treemap based on accident counts per city within states
+def create_treemap(filtered_df):
+    state_city_counts = filtered_df.groupby(['State', 'City']).size().reset_index(name='Counts')
+    top_cities_per_state = state_city_counts.groupby('State').apply(lambda x: x.nlargest(10, 'Counts')).reset_index(drop=True)
+    top_states = top_cities_per_state.groupby('State')['Counts'].sum().nlargest(5).index
+    top_cities_top_states = top_cities_per_state[top_cities_per_state['State'].isin(top_states)]
+
+    fig_treemap = px.treemap(
+        top_cities_top_states,
+        path=['State', 'City'],
+        values='Counts',
+        title="Top 5 Cities per Top 5 States by Accident Counts"
+    )
+    fig_treemap.update_layout(width=1000, height=700)
+    return fig_treemap
+
+def create_pie_charts(filtered_df):
+    pie_charts = []
+    for severity in range(1, 5):
+        # Filter for the specific severity
+        severity_counts = filtered_df[filtered_df['Severity'] == severity]
+        
+        # Calculate the percentage of each severity out of the total accidents
+        total_accidents = len(filtered_df)
+        severity_count = len(severity_counts)
+        percentage = (severity_count / total_accidents) * 100
+
+        # Create a DataFrame for the pie chart
+        severity_df = pd.DataFrame({
+            'Severity': [f'Severity {severity}', 'Others'],
+            'Count': [severity_count, total_accidents - severity_count],
+            'Percentage': [percentage, 100 - percentage]
+        })
+
+        # Create the pie chart
+        pie_chart = px.pie(severity_df, names='Severity', values='Percentage', title=f'Severity {severity} Accidents')
+        pie_chart.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        pie_charts.append(pie_chart)
+    
+    return pie_charts
 
 # Define the layout for the home page
 layout = html.Div([
-
     html.H1('Home Page'),
     
     # Date Range
@@ -92,29 +139,45 @@ layout = html.Div([
             min=0,
             max=(df['Start_Time'].max() - df['Start_Time'].min()).days,
             value=[0, (df['Start_Time'].max() - df['Start_Time'].min()).days],
-            marks={
-                i: (df['Start_Time'].min() + pd.Timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, (df['Start_Time'].max() - df['Start_Time'].min()).days + 1, 30)
-            },
+            marks={int((date - start_date).days): date.strftime('%Y-%m') for date in date_range}, 
             tooltip={"placement": "bottom", "always_visible": True},
-            className="date-range-slider"        
+            className="date-range-slider"
         ),
         # End Date Picker
         dcc.DatePickerSingle(
             id='end-date-picker',
-            min_date_allowed=df['Start_Time'].min().date(),
-            max_date_allowed=df['Start_Time'].max().date(),
-            initial_visible_month=df['Start_Time'].max().date(),
-            date=df['Start_Time'].max().date(),
+            min_date_allowed=df['End_Time'].min().date(),
+            max_date_allowed=df['End_Time'].max().date(),
+            initial_visible_month=df['End_Time'].max().date(),
+            date=df['End_Time'].max().date(),
             display_format='YYYY-MM-DD'
         ),
         # Submit
         html.Button('Submit', id='submit-button', n_clicks=0)
-    ], style={'display': 'flex', 'justify-content': 'center', 'align-items': 'center', 'margin': '20px 0'}),
+    ], className='datepicker-container'),
 
-    html.Div(children=[
-        dcc.Graph(id='severity-bar-chart', figure=barsample)
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
-    
+    html.Div([
+        html.Div([
+            dcc.Graph(id='choropleth-map'),
+        ], style={'display': 'inline-block', 'width': '49%', 'vertical-align': 'top'}),
+
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pie-chart-severity-1'),
+                dcc.Graph(id='pie-chart-severity-2')
+            ], style={'display': 'flex'}),
+
+            html.Div([
+                dcc.Graph(id='pie-chart-severity-3'),
+                dcc.Graph(id='pie-chart-severity-4')
+            ], style={'display': 'flex'})
+        ], style={'display': 'inline-block', 'width': '49%', 'vertical-align': 'top'})
+    ]),
+
+    html.Div([
+        dcc.Graph(id='treemap')
+    ]),
+
     html.H2('Number of Accidents over Time'),
     dcc.RadioItems(
         id='radioitems',
@@ -137,7 +200,7 @@ layout = html.Div([
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
 ])
 
-# Callback to update graph
+# Callback to update line graph
 @dash.callback(
     Output('graph', 'figure'),
     Input('radioitems', 'value')
@@ -151,6 +214,7 @@ def update_graph(selected_option):
         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
     return fig
 
+# Callback to sync date picker and slider
 @dash.callback(
     [Output('start-date-picker', 'date'),
      Output('end-date-picker', 'date'),
@@ -164,33 +228,45 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if triggered_id == 'date-range-slider':
-        start_date = df['Start_Time'].min() + pd.Timedelta(days=slider_range[0])
-        end_date = df['Start_Time'].min() + pd.Timedelta(days=slider_range[1])
-    elif triggered_id == 'start-date-picker':
-        start_date = pd.to_datetime(start_date)
-        end_date = pd.to_datetime(end_date)
-        slider_range[0] = (start_date - df['Start_Time'].min()).days
-    elif triggered_id == 'end-date-picker':
-        start_date = pd.to_datetime(start_date)
-        end_date = pd.to_datetime(end_date)
-        slider_range[1] = (end_date - df['Start_Time'].min()).days
+        start_date = (df['Start_Time'].min() + pd.Timedelta(days=slider_range[0])).date()
+        end_date = (df['End_Time'].min() + pd.Timedelta(days=slider_range[1])).date()
+    elif triggered_id in ['start-date-picker', 'end-date-picker']:
+        start_date = pd.to_datetime(start_date).date()
+        end_date = pd.to_datetime(end_date).date()
+        slider_range[0] = (pd.to_datetime(start_date) - df['Start_Time'].min()).days
+        slider_range[1] = (pd.to_datetime(end_date) - df['End_Time'].min()).days
 
-    return start_date.date(), end_date.date(), slider_range
+    return start_date, end_date, slider_range
 
-# Callback to update barsample based on date range
+# Combined callback to update all graphs based on date range
 @dash.callback(
-    Output('severity-bar-chart', 'figure'),
+    [Output('choropleth-map', 'figure'),
+     Output('treemap', 'figure'),
+     Output('pie-chart-severity-1', 'figure'),
+     Output('pie-chart-severity-2', 'figure'),
+     Output('pie-chart-severity-3', 'figure'),
+     Output('pie-chart-severity-4', 'figure')],
     Input('submit-button', 'n_clicks'),
     State('start-date-picker', 'date'),
     State('end-date-picker', 'date')
 )
-def update_barsample(n_clicks, start_date, end_date):
+def update_all_graphs(n_clicks, start_date, end_date):
     if n_clicks > 0:
         filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
-        severity_counts_filtered = filtered_df['Severity'].value_counts().reset_index()
-        severity_counts_filtered.columns = ['Severity', 'count']
-        barsample_filtered = px.bar(severity_counts_filtered, x='Severity', y='count', title='Accidents by Severity')
-        return barsample_filtered
-    return barsample
+        
+        # Update choropleth map
+        choropleth = create_choropleth(filtered_df)
+        
+        # Update treemap
+        treemap = create_treemap(filtered_df)
+        
+        # Create pie charts
+        pie_charts = create_pie_charts(filtered_df)
+        
+        return choropleth, treemap, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+    
+    # Return original figures if no clicks
+    pie_charts = create_pie_charts(df)
+    return create_choropleth(df), create_treemap(df), pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
 
 logging.info('DONE HOME.PY')

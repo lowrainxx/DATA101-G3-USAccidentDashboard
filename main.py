@@ -1,6 +1,13 @@
 import dash
 from dash import dcc, html
 from flask import Flask
+import os
+import logging
+import dask.dataframe as dd
+from data import df
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 
 # Flask server
 server = Flask(__name__)
@@ -8,13 +15,14 @@ server = Flask(__name__)
 # Dash app
 app = dash.Dash(__name__, server=server, use_pages=True)
 
+total_accidents = f"{df.shape[0]:,}"
+
 # Layout here
 app.layout = html.Div([
     html.Nav([
         dcc.Link('Home', href='/', className='nav-link'),
-        dcc.Link('Weather', href='/weather', className='nav-link'),
-        # dcc.Link('POI', href='/poi', className='nav-link'),
-        dcc.Link('Database', href='/database', className='nav-link')
+        dcc.Link('Database', href='/database', className='nav-link'),
+        html.Span(f"Total Accidents: {total_accidents}", className='nav-link total-accidents')
     ], className='navbar'),
     
     dash.page_container,  # Loads page starting here
@@ -24,4 +32,3 @@ app.layout = html.Div([
 
 if __name__ == '__main__':
     server.run(debug=True)
-    

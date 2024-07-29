@@ -1,3 +1,9 @@
+# TITLE
+
+This is a blanlbalbala dataset from kaggle (introduction)
+
+This visualization app focuses on ...
+
 Before running:
 - download the csv from **Kaggle** https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents
 - open Split_Dataset.ipynb, run all, and you should get a file called `us_accidents_cut.csv`

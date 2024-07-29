@@ -1,7 +1,17 @@
+/* App */
+body, html {
+    /* background-color: #2e2e2e; */
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
 /* Style for the navigation bar */
 .navbar {
     background-color: #333;
     overflow: hidden;
+    font-size: 20px;
 }
 
 .nav-link {
@@ -18,12 +28,28 @@
     color: black;
 }
 
-/* Style for the main content */
+/* Total Accidents */
+.total-accidents {
+    float: right;
+    margin-left: auto;
+    color: white; 
+    padding: 14px 16px;  /* Same padding as nav-link */
+    text-align: center;
+    text-decoration: none;
+    font-size: 50px;
+}
+
+.total-accidents:hover {
+    background-color: #333; 
+    color: white;
+}
+
+/* Main Content */
 .main-content {
     padding: 20px;
 }
 
-/* Style for the footer */
+/* Footer */
 .footer {
     background-color: #333;
     color: white;
@@ -36,7 +62,13 @@
 }
 
 /* Slider */
-
 .date-range-slider {
     width: 80%;
+}
+
+.datepicker-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
 }
