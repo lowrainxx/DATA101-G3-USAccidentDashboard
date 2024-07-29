@@ -74,7 +74,7 @@ def create_treemap(filtered_df):
         top_cities_top_states,
         path=['State', 'City'],
         values='Counts',
-        title="Top 5 Cities per Top 5 States by Accident Counts"
+        title="Top 10 Cities per Top 5 States by Accident Counts"
     )
     fig_treemap.update_layout(width=1000, height=700)
     return fig_treemap
