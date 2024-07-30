@@ -4,11 +4,13 @@
     padding: 20px;
 }
 
-.db-title {
+/* Search Field */
+.search-id-input {
     color: #fd5858;
     font-size: 2em;
     margin-bottom: 20px;
     margin-top: -5px;
+    margin-right: 10px;
 }
 
 .dash-table-container {
