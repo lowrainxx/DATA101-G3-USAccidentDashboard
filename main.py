@@ -7,11 +7,14 @@ from data import df
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
+# External Stylesheets
+external_stylesheets = ['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css']
+
 # Flask server
 server = Flask(__name__)
 
 # Dash app
-app = dash.Dash(__name__, server=server, use_pages=True)
+app = dash.Dash(__name__,  server=server, use_pages=True, external_stylesheets=external_stylesheets)
 app.title = "US Accidents Dashboard"
 
 total_accidents = f"{df.shape[0]:,}".replace(',', ' ')

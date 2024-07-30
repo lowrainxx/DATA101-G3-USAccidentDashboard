@@ -29,7 +29,11 @@ layout = html.Div(
                     type='text',
                     placeholder='Search by ID...',
                 ),
-                html.Button('Search', id='search-button', n_clicks=0)
+                html.Button(
+                    html.I(className='fas fa-search'), 
+                    id='search-button', 
+                    n_clicks=0
+                ),
             ],
             style={'marginBottom': '20px'}
         ),
@@ -49,7 +53,7 @@ layout = html.Div(
                 {'name': 'City', 'id': 'City'},
             ],
             data=df_sorted.head(1000).to_dict('records'),
-            page_size=50,
+            page_action='none',
             style_table={'overflowX': 'auto'},
             style_cell={
                 'textAlign': 'center',
@@ -163,10 +167,10 @@ def create_details(selected_data):
     Input('modal-close-button', 'n_clicks'),
     Input('search-button', 'n_clicks'),
     State('search-id-input', 'value'),
-    State('db-table', 'data'),
+    State('db-table', 'derived_virtual_data'),
     State('accident-modal', 'is_open')
 )
-def display_modal(active_cell, close_clicks, search_clicks, search_id, data, is_open):
+def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_virtual_data, is_open):
     ctx = dash.callback_context
 
     if ctx.triggered:
@@ -183,14 +187,13 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, data, is_
             return False, [empty_details, dcc.Graph(figure=placeholder_fig, id='map-graph', style={'height': '300px'})], placeholder_fig, False
 
         if triggered_prop == 'search-button.n_clicks' and search_id:
-            # Find the row with the specified ID
+            # Find the row with the specified ID in the entire DataFrame
             search_id = search_id.lower()
-            for row in data:
-                if str(row['ID']).lower() == search_id:
-                    selected_data = row
-                    break
-            else:
+            selected_data = df[df['ID'].astype(str).str.lower() == search_id]
+            if selected_data.empty:
                 return is_open, dash.no_update, dash.no_update, True  # ID not found
+            
+            selected_data = selected_data.iloc[0]  # Get the first matching row as a series
 
             details = create_details(selected_data)
 
@@ -221,7 +224,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, data, is_
 
     if active_cell:
         row = active_cell['row']
-        selected_data = data[row]
+        selected_data = derived_virtual_data[row]
         details = create_details(selected_data)
 
         # Create the map figure only if lat/lon are present
