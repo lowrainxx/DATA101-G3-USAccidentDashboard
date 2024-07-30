@@ -47,7 +47,15 @@ def create_choropleth(filtered_df):
         labels={'Accident_Count': 'Accident Count'},
         color_continuous_scale="Viridis"
     )
-    fig_choropleth.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)') # Transparent background
+    fig_choropleth.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)', # Transparent background
+        width=1800, 
+        height=800,
+        geo=dict(
+            bgcolor='red' # Set background color of the choropleth
+        ),
+    ) 
     return fig_choropleth
 
 # Treemap based on accident counts per city within states
