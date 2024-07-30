@@ -53,7 +53,7 @@ def create_choropleth(filtered_df):
         width=1800, 
         height=800,
         geo=dict(
-            bgcolor='red' # Set background color of the choropleth
+            bgcolor='white' # Set background color of the choropleth
         ),
     ) 
     return fig_choropleth
