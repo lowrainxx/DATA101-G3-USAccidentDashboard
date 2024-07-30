@@ -6,3 +6,4 @@ plotly.express
 dask.dataframe
 os
 logging
+dash-bootstrap-components
