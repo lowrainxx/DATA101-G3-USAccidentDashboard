@@ -16,8 +16,13 @@ register_page(__name__, path='/database')
 if df is None:
     raise ValueError("database.py : DataFrame is not loaded.")
 
+# Change data types
+# df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+# df['End_Time'] = pd.to_datetime(df['End_Time'])
+
 # Sort the data by ID
 df_sorted = df.sort_values(by='ID')
+initial_data = df_sorted.head(1000).to_dict('records')
 
 layout = html.Div(
     className='database-container',
@@ -44,15 +49,18 @@ layout = html.Div(
         dash_table.DataTable(
             id='db-table',
             columns=[
-                {'name': 'ID', 'id': 'ID'},
-                {'name': 'Start Time', 'id': 'Start_Time'},
-                {'name': 'End Time', 'id': 'End_Time'},
-                {'name': 'Severity', 'id': 'Severity'},
-                {'name': 'State', 'id': 'State'},
+                {'name': 'ID', 'id': 'ID', 'sortable': True},
+                {'name': 'Start Time', 'id': 'Start_Time', 'sortable': True},
+                {'name': 'End Time', 'id': 'End_Time', 'sortable': True},
+                {'name': 'Severity', 'id': 'Severity', 'sortable': True},
+                {'name': 'State', 'id': 'State', 'sortable': True},
                 {'name': 'County', 'id': 'County'},
                 {'name': 'City', 'id': 'City'},
             ],
-            data=df_sorted.head(1000).to_dict('records'),
+            data=initial_data,
+            sort_action='custom',
+            sort_mode='single',
+            sort_by=[{'column_id': 'ID', 'direction': 'asc'}],  # Default sort by ID ascending
             page_action='none',
             style_table={'overflowX': 'auto'},
             style_cell={
@@ -107,19 +115,28 @@ layout = html.Div(
     ]
 )
 
-# Load More Rows
+# Load More Rows and Handle Sorting
 @callback(
     Output('db-table', 'data'),
     Input('load-more-button', 'n_clicks'),
+    Input('db-table', 'sort_by'),
     State('db-table', 'data')
 )
-def load_more_data(n_clicks, current_data):
-    if n_clicks == 0:
-        return df_sorted.head(1000).to_dict('records')
+def load_more_data(n_clicks, sort_by, current_data):
+    # Create a copy of the entire dataset
+    df_copy = df.copy()
 
+    # Handle sorting
+    if sort_by:
+        for sort in sort_by:
+            df_copy = df_copy.sort_values(by=sort['column_id'], ascending=sort['direction'] == 'asc')
+    else:
+        # Default sorting by ID ascending
+        df_copy = df_copy.sort_values(by='ID', ascending=True)
+    
     # Calculate the number of rows to display
     rows_to_display = (n_clicks + 1) * 1000
-    return df_sorted.head(rows_to_display).to_dict('records')
+    return df_copy.head(rows_to_display).to_dict('records')
 
 def create_details(selected_data):
     return html.Div([

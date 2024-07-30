@@ -125,12 +125,19 @@
     padding: auto 10px auto 10px;
 }
 
-.detail-main { /* ID, TIME, COORDINATES */
+.detail-main { /* ID, Time, Coordinates */
     display: flex;
     justify-content: space-between;
+    margin-bottom: -20px;
 }
 
-.item-description {
+.detail-address {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: -15px;
+}
+
+.item-description { /* Accident Description */
     flex: 1;
     margin-right: 10px;
     display: -webkit-box;
@@ -138,16 +145,13 @@
     -webkit-line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.detail-address {
-    display: flex;
-    justify-content: space-between;
+    margin-bottom: -15px;
 }
 
 .detail-other {
     display: flex;
     justify-content: space-between;
+    margin-bottom: -25px;
 }
 
 .detail-weather {
@@ -157,4 +161,14 @@
 .detail-weather-top, .detail-weather-bottom{
     display: flex;
     justify-content: space-between;
+}
+
+.detail-weather-top {
+    margin-bottom: -30px;
+}
+
+#map-graph {
+    margin-top: 25px;
+    border: 5px solid black;
+    border-radius: 5px;
 }
