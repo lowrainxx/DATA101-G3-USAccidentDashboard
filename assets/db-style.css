@@ -1,10 +1,32 @@
-/* Sample */
+/* database table */
 .database-container {
     background-color: #f8f9fa;
     padding: 20px;
 }
 
 .db-title {
-    color: #007bff;
+    color: #fd5858;
     font-size: 2em;
+    margin-bottom: 20px;
+    margin-top: -5px;
+}
+
+.dash-table-container {
+    margin-top: 20px;
+}
+
+/* Load More button */
+#load-more-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 50px;
+    margin: 10px;
+}
+
+#load-more-button:hover {
+    background-color: #0056b3;
 }
