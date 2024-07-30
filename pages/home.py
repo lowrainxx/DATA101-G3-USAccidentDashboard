@@ -30,43 +30,7 @@ def prepare_data():
     bymonth = bymonth.sort_values(by="Month")
     byday = byday.sort_values(by="Day")
 
-
-    #stacked bar chart
-    severity_counts = df['Severity'].value_counts().reset_index()
-    severity_counts.columns = ['Severity', 'count']
-
-    # New code for severity and weather conditions
-    weather_columns = ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
-                       'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']
-    weather_conditions = []
-
-    for weather in weather_columns:
-        temp_df = df[df[weather] == True]
-        temp_df_grouped = temp_df.groupby('Severity').size().reset_index(name='Count')
-        temp_df_grouped['Weather_Condition'] = weather
-        weather_conditions.append(temp_df_grouped)
-
-    severity_weather = pd.concat(weather_conditions, ignore_index=True)
-
-    # Sorting by total count per weather condition
-    total_counts = severity_weather.groupby('Weather_Condition')['Count'].sum().reset_index()
-    total_counts = total_counts.sort_values(by='Count', ascending=False)
-    sorted_conditions = total_counts['Weather_Condition'].tolist()
-
-    severity_weather['Weather_Condition'] = pd.Categorical(severity_weather['Weather_Condition'], categories=sorted_conditions, ordered=True)
-
-    # Sorting each weather condition by severity count
-    severity_weather = severity_weather.sort_values(by=['Weather_Condition', 'Count'], ascending=[True, False])
-
-    stacked_bar = px.bar(
-        severity_weather,
-        x='Weather_Condition',
-        y='Count',
-        color='Severity',
-        title='Number of Accidents by Severity and Weather Conditions',
-        labels={'Count': 'Number of Accidents'},
-    )
-    return df, stacked_bar, byhour, bymonth, byday
+    return df, byhour, bymonth, byday
 
 # Choropleth map based on accident counts per state
 def create_choropleth(filtered_df):
@@ -178,7 +142,7 @@ average_per_year = accidents_per_year.mean()
 each_severity_counts = df['Severity'].value_counts().sort_index()
 
 # Prepare data once and reuse in callbacks
-df, stacked_bar, byhour, bymonth, byday = prepare_data()
+df, byhour, bymonth, byday = prepare_data()
 
 def format_number_with_spaces(number):
     return '{:,.0f}'.format(number).replace(',', ' ')
