@@ -200,11 +200,11 @@ layout = html.Div([
     html.Div([
         html.Div([
             dcc.Graph(id='choropleth-map'),
-        ], style={'display': 'inline-block', 'width': '60%', 'vertical-align': 'top'}),
+        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '60%', 'align-items': 'center', 'justify-content': 'center'}),
 
         html.Div([
             dcc.Graph(id='treemap')
-        ], style={'display': 'inline-block', 'width': '40%', 'vertical-align': 'top'})
+        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '40%', 'margin': '0 auto'})
 
         # html.Div([
         #     html.Div([
@@ -217,7 +217,7 @@ layout = html.Div([
         #         dcc.Graph(id='pie-chart-severity-4')
         #     ], style={'display': 'flex'})
         # ], style={'display': 'inline-block', 'width': '49%', 'vertical-align': 'top'})
-    ], style={'width': '100%', 'height': '100%' , 'display': 'flex'}),
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
 
     html.H2('Number of Accidents over Time'),
     dcc.RadioItems(
