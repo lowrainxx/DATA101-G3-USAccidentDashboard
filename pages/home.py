@@ -30,20 +30,7 @@ def prepare_data():
     bymonth = bymonth.sort_values(by="Month")
     byday = byday.sort_values(by="Day")
 
-    severity_counts = df['Severity'].value_counts().reset_index()
-    severity_counts.columns = ['Severity', 'count']
-
-    severity_weather = df.groupby(['Severity', 'Weather_Condition']).size().reset_index(name='Count')
-
-    stacked_bar = px.bar(
-        severity_weather,
-        x='Severity',
-        y='Count',
-        color='Weather_Condition',
-        title='Number of Accidents by Severity and Weather Conditions',
-        labels={'Count': 'Number of Accidents'},
-    )
-    return df, stacked_bar, byhour, bymonth, byday
+    return df, byhour, bymonth, byday
 
 # Choropleth map based on accident counts per state
 def create_choropleth(filtered_df):
@@ -105,6 +92,48 @@ def create_pie_charts(filtered_df):
     
     return pie_charts
 
+#stacked bar chart
+def create_stacked_bar_chart(filtered_df, selected_weather_condition):
+    # If 'All' is selected, we want to show all weather conditions
+    if selected_weather_condition == 'All':
+        weather_columns = ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+                           'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']
+        weather_conditions = []
+
+        for weather in weather_columns:
+            temp_df = filtered_df[filtered_df[weather] == True]
+            temp_df_grouped = temp_df.groupby('Severity').size().reset_index(name='Count')
+            temp_df_grouped['Weather_Condition'] = weather
+            weather_conditions.append(temp_df_grouped)
+
+        severity_weather = pd.concat(weather_conditions, ignore_index=True)
+    else:
+        # Filter for the selected weather condition
+        temp_df = filtered_df[filtered_df[selected_weather_condition] == True]
+        severity_weather = temp_df.groupby('Severity').size().reset_index(name='Count')
+        severity_weather['Weather_Condition'] = selected_weather_condition
+    
+    # Sorting by total count per weather condition
+    total_counts = severity_weather.groupby('Weather_Condition')['Count'].sum().reset_index()
+    total_counts = total_counts.sort_values(by='Count', ascending=False)
+    sorted_conditions = total_counts['Weather_Condition'].tolist()
+
+    severity_weather['Weather_Condition'] = pd.Categorical(severity_weather['Weather_Condition'], categories=sorted_conditions, ordered=True)
+
+    # Sorting each weather condition by severity count
+    severity_weather = severity_weather.sort_values(by=['Weather_Condition', 'Count'], ascending=[True, True])
+
+    fig_stacked_bar = px.bar(
+        severity_weather,
+        x='Weather_Condition',
+        y='Count',
+        color='Severity',
+        title='Number of Accidents by Severity and Weather Conditions',
+        labels={'Count': 'Number of Accidents'},
+    )
+    fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
+    return fig_stacked_bar
+
 df['Start_Time'] = pd.to_datetime(df['Start_Time'])
 start_date = df['Start_Time'].min()
 end_date = df['Start_Time'].max()
@@ -120,7 +149,7 @@ average_per_year = accidents_per_year.mean()
 each_severity_counts = df['Severity'].value_counts().sort_index()
 
 # Prepare data once and reuse in callbacks
-df, stacked_bar, byhour, bymonth, byday = prepare_data()
+df, byhour, bymonth, byday = prepare_data()
 
 def format_number_with_spaces(number):
     return '{:,.0f}'.format(number).replace(',', ' ')
@@ -200,24 +229,12 @@ layout = html.Div([
     html.Div([
         html.Div([
             dcc.Graph(id='choropleth-map'),
-        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '60%', 'align-items': 'center', 'justify-content': 'center'}),
+        ], style={'display': 'inline-block', 'width': '60%', 'vertical-align': 'top'}),
 
         html.Div([
             dcc.Graph(id='treemap')
-        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '40%', 'margin': '0 auto'})
-
-        # html.Div([
-        #     html.Div([
-        #         dcc.Graph(id='pie-chart-severity-1'),
-        #         dcc.Graph(id='pie-chart-severity-2')
-        #     ], style={'display': 'flex'}),
-
-        #     html.Div([
-        #         dcc.Graph(id='pie-chart-severity-3'),
-        #         dcc.Graph(id='pie-chart-severity-4')
-        #     ], style={'display': 'flex'})
-        # ], style={'display': 'inline-block', 'width': '49%', 'vertical-align': 'top'})
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
+        ], style={'display': 'inline-block', 'width': '40%', 'vertical-align': 'top'})
+    ], style={'width': '100%', 'height': '100%' , 'display': 'flex'}),
 
     html.H2('Number of Accidents over Time'),
     dcc.RadioItems(
@@ -233,12 +250,26 @@ layout = html.Div([
     html.Div(children=[
         dcc.Graph(id='graph')
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
-
-    # stacked bar chart for severity and weather conditions
+    ##
+    # Filter dropdown for weather condition
+    # Stacked bar chart for severity and weather conditions
     html.H2('Accidents by Severity and Weather Conditions'),
+html.Div([
+    html.Label('Weather Condition'),
+    dcc.Dropdown(
+        id='weather-condition-dropdown',
+        options=[
+            {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
+        ] + [{'label': condition, 'value': condition} for condition in
+             ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+              'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
+        value='All',  # Default value
+        style={'width': '200px', 'margin': '0'}
+    ),
     html.Div(children=[
-        dcc.Graph(id='severity-weather-stacked-bar', figure=stacked_bar)
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
+        dcc.Graph(id='severity-weather-stacked-bar')
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '100%', 'margin': '0 auto'})
+], style={'textAlign': 'left', 'margin': '0 auto'})
 ])
 
 # Callback to update line graph
@@ -254,6 +285,19 @@ def update_graph(selected_option):
     elif selected_option == 'Monthly':
         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
     return fig
+
+# Standalone callback to update the stacked bar chart based on the weather condition dropdown
+@dash.callback(
+    Output('severity-weather-stacked-bar', 'figure'),
+    [Input('weather-condition-dropdown', 'value')],
+    [State('start-date-picker', 'date'),
+     State('end-date-picker', 'date')]
+)
+def update_stacked_bar_chart(selected_weather_condition, start_date, end_date):
+    filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+    
+    # Update stacked bar chart with selected weather condition
+    return create_stacked_bar_chart(filtered_df, selected_weather_condition)
 
 # Callback to sync date picker and slider
 @dash.callback(
@@ -283,10 +327,10 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
 @dash.callback(
     [Output('choropleth-map', 'figure'),
      Output('treemap', 'figure')],
-    #  Output('pie-chart-severity-1', 'figure'),
-    #  Output('pie-chart-severity-2', 'figure'),
-    #  Output('pie-chart-severity-3', 'figure'),
-    #  Output('pie-chart-severity-4', 'figure')],
+    # Output('pie-chart-severity-1', 'figure'),
+    # Output('pie-chart-severity-2', 'figure'),
+    # Output('pie-chart-severity-3', 'figure'),
+    # Output('pie-chart-severity-4', 'figure')],
     Input('submit-button', 'n_clicks'),
     State('start-date-picker', 'date'),
     State('end-date-picker', 'date')
