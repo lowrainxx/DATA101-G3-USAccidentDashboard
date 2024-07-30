@@ -93,19 +93,26 @@ def create_pie_charts(filtered_df):
     return pie_charts
 
 #stacked bar chart
-def create_stacked_bar_chart(filtered_df):
-    weather_columns = ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
-                       'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']
-    weather_conditions = []
+def create_stacked_bar_chart(filtered_df, selected_weather_condition):
+    # If 'All' is selected, we want to show all weather conditions
+    if selected_weather_condition == 'All':
+        weather_columns = ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+                           'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']
+        weather_conditions = []
 
-    for weather in weather_columns:
-        temp_df = filtered_df[filtered_df[weather] == True]
-        temp_df_grouped = temp_df.groupby('Severity').size().reset_index(name='Count')
-        temp_df_grouped['Weather_Condition'] = weather
-        weather_conditions.append(temp_df_grouped)
+        for weather in weather_columns:
+            temp_df = filtered_df[filtered_df[weather] == True]
+            temp_df_grouped = temp_df.groupby('Severity').size().reset_index(name='Count')
+            temp_df_grouped['Weather_Condition'] = weather
+            weather_conditions.append(temp_df_grouped)
 
-    severity_weather = pd.concat(weather_conditions, ignore_index=True)
-
+        severity_weather = pd.concat(weather_conditions, ignore_index=True)
+    else:
+        # Filter for the selected weather condition
+        temp_df = filtered_df[filtered_df[selected_weather_condition] == True]
+        severity_weather = temp_df.groupby('Severity').size().reset_index(name='Count')
+        severity_weather['Weather_Condition'] = selected_weather_condition
+    
     # Sorting by total count per weather condition
     total_counts = severity_weather.groupby('Weather_Condition')['Count'].sum().reset_index()
     total_counts = total_counts.sort_values(by='Count', ascending=False)
@@ -124,7 +131,7 @@ def create_stacked_bar_chart(filtered_df):
         title='Number of Accidents by Severity and Weather Conditions',
         labels={'Count': 'Number of Accidents'},
     )
-    fig_stacked_bar.update_layout(width=1800, height=800) # Adjust the size as needed
+    fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
     return fig_stacked_bar
 
 df['Start_Time'] = pd.to_datetime(df['Start_Time'])
@@ -243,12 +250,26 @@ layout = html.Div([
     html.Div(children=[
         dcc.Graph(id='graph')
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
-
+    ##
+    # Filter dropdown for weather condition
     # Stacked bar chart for severity and weather conditions
     html.H2('Accidents by Severity and Weather Conditions'),
+html.Div([
+    html.Label('Weather Condition'),
+    dcc.Dropdown(
+        id='weather-condition-dropdown',
+        options=[
+            {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
+        ] + [{'label': condition, 'value': condition} for condition in
+             ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+              'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
+        value='All',  # Default value
+        style={'width': '200px', 'margin': '0'}
+    ),
     html.Div(children=[
         dcc.Graph(id='severity-weather-stacked-bar')
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '100%', 'margin': '0 auto'}),
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '100%', 'margin': '0 auto'})
+], style={'textAlign': 'left', 'margin': '0 auto'})
 ])
 
 # Callback to update line graph
@@ -264,6 +285,19 @@ def update_graph(selected_option):
     elif selected_option == 'Monthly':
         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
     return fig
+
+# Standalone callback to update the stacked bar chart based on the weather condition dropdown
+@dash.callback(
+    Output('severity-weather-stacked-bar', 'figure'),
+    [Input('weather-condition-dropdown', 'value')],
+    [State('start-date-picker', 'date'),
+     State('end-date-picker', 'date')]
+)
+def update_stacked_bar_chart(selected_weather_condition, start_date, end_date):
+    filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+    
+    # Update stacked bar chart with selected weather condition
+    return create_stacked_bar_chart(filtered_df, selected_weather_condition)
 
 # Callback to sync date picker and slider
 @dash.callback(
@@ -292,8 +326,7 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
 # Combined callback to update all graphs based on date range
 @dash.callback(
     [Output('choropleth-map', 'figure'),
-     Output('treemap', 'figure'),
-     Output('severity-weather-stacked-bar', 'figure')],
+     Output('treemap', 'figure')],
     # Output('pie-chart-severity-1', 'figure'),
     # Output('pie-chart-severity-2', 'figure'),
     # Output('pie-chart-severity-3', 'figure'),
@@ -312,16 +345,13 @@ def update_all_graphs(n_clicks, start_date, end_date):
         # Update treemap
         treemap = create_treemap(filtered_df)
         
-        # Update stacked bar chart
-        stacked_bar_chart = create_stacked_bar_chart(filtered_df)
-        
         # Create pie charts
         # pie_charts = create_pie_charts(filtered_df)
         
-        return choropleth, treemap, stacked_bar_chart #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+        return choropleth, treemap #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
     
     # Return original figures if no clicks
     # pie_charts = create_pie_charts(df)
-    return create_choropleth(df), create_treemap(df), create_stacked_bar_chart(df) #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+    return create_choropleth(df), create_treemap(df) #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
 
 logging.info('DONE HOME.PY')
