@@ -43,17 +43,17 @@ def create_choropleth(filtered_df):
         locationmode="USA-states",
         color='Accident_Count',
         scope="usa",
-        title="Accidents by State",
         labels={'Accident_Count': 'Accident Count'},
         color_continuous_scale="Viridis"
     )
     fig_choropleth.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', 
         plot_bgcolor='rgba(0,0,0,0)', # Transparent background
-        width=1800, 
-        height=800,
+        width=1200, height=800,
+        margin=dict(l=1, r=1, t=1, b=1),
         geo=dict(
-            bgcolor='white' # Set background color of the choropleth
+            bgcolor='white', # Set background color of the choropleth
+            showcoastlines=True,
         ),
     ) 
     return fig_choropleth
@@ -71,34 +71,11 @@ def create_treemap(filtered_df):
         values='Counts',
         title="Top 10 Cities per Top 5 States by Accident Counts"
     )
-    fig_treemap.update_layout(width=1000, height=700)
+    fig_treemap.update_layout(
+        width=700, 
+        height=700
+    )
     return fig_treemap
-
-# Donut Charts
-def create_pie_charts(filtered_df):
-    pie_charts = []
-    for severity in range(1, 5):
-        # Filter for the specific severity
-        severity_counts = filtered_df[filtered_df['Severity'] == severity]
-        
-        # Calculate the percentage of each severity out of the total accidents
-        total_accidents = len(filtered_df)
-        severity_count = len(severity_counts)
-        percentage = (severity_count / total_accidents) * 100
-
-        # Create a DataFrame for the pie chart
-        severity_df = pd.DataFrame({
-            'Severity': [f'Severity {severity}', 'Others'],
-            'Count': [severity_count, total_accidents - severity_count],
-            'Percentage': [percentage, 100 - percentage]
-        })
-
-        # Create the pie chart
-        pie_chart = px.pie(severity_df, names='Severity', values='Percentage', title=f'Severity {severity} Accidents',)
-        pie_chart.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        pie_charts.append(pie_chart)
-    
-    return pie_charts
 
 #stacked bar chart
 def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
@@ -141,7 +118,10 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
         title='Number of Accidents by Severity and Weather Conditions',
         labels={'Count': 'Number of Accidents'},
     )
-    fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
+    fig_stacked_bar.update_layout(
+        width=1800, 
+        height=800
+    )  
     return fig_stacked_bar
 
 #Line chart accidents over time
@@ -152,7 +132,10 @@ def create_accidents_over_time_graph(selected_option):
         fig = px.line(byday, x='Day', y='Count', title='Accidents by Day of the Month')
     elif selected_option == 'Monthly':
         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
     return fig
 
 df['Start_Time'] = pd.to_datetime(df['Start_Time'])
@@ -213,7 +196,7 @@ layout = html.Div([
     ]),
 
     # Date Range
-    html.H2('Select Date Range'),
+    html.Div(id='date-range-display'),
     html.Div([
         # Start Date Picker
         dcc.DatePickerSingle(
@@ -247,15 +230,19 @@ layout = html.Div([
         html.Button('Submit', id='submit-button', n_clicks=0)
     ], className='datepicker-container'),
 
+    # Chloropleth & Tree Map
     html.Div([
-        html.Div([
-            dcc.Graph(id='choropleth-map'),
-        ], style={'display': 'inline-block', 'width': '60%', 'vertical-align': 'top'}),
+            html.Div([
+                    dcc.Graph(id='choropleth-map'),
+                ], id='chloropleth-map-container',
+            ),
 
-        html.Div([
-            dcc.Graph(id='treemap')
-        ], style={'display': 'inline-block', 'width': '40%', 'vertical-align': 'top'})
-    ], style={'width': '100%', 'height': '100%' , 'display': 'flex'}),
+            html.Div([
+                    dcc.Graph(id='treemap')
+                ], id='treemap-container',
+            ),
+        ], id='ct-container'
+    ),
 
     html.H2('Number of Accidents over Time'),
     dcc.RadioItems(
@@ -269,8 +256,10 @@ layout = html.Div([
         inline=True
     ),
     html.Div(children=[
-        dcc.Graph(id='graph')
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
+            dcc.Graph(id='linegraph')
+        ], id='linegraph-container'
+    ), 
+
     ##
     # Filter dropdown for weather condition
     # Stacked bar chart for severity and weather conditions
@@ -289,14 +278,16 @@ layout = html.Div([
             style={'width': '300px', 'margin': '0'}
         ),
         html.Div(children=[
-            dcc.Graph(id='severity-weather-stacked-bar')
-        ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '100%', 'margin': '0 auto'})
-    ], style={'textAlign': 'left', 'margin': '0 auto'})
+                dcc.Graph(id='severity-weather-stacked-bar')
+            ], id='stackedbarchart-container'
+        ),
+        
+    ], id='stackedbar-container'), 
 ])
 
 # Callback to update line graph
 # @dash.callback(
-#     Output('graph', 'figure'),
+#     Output('linegraph', 'figure'),
 #     Input('radioitems', 'value')
 # )
 # def update_graph(selected_option):
@@ -345,17 +336,30 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
 
     return start_date, end_date, slider_range
 
+# Callback to display selected date range
+@dash.callback(
+    Output('date-range-display', 'children'),
+    Input('submit-button', 'n_clicks'),
+    State('start-date-picker', 'date'),
+    State('end-date-picker', 'date')
+)
+def update_date_range_display(n_clicks, start_date, end_date):
+    if n_clicks:
+        start_date = pd.to_datetime(start_date).strftime('%B %d, %Y')
+        end_date = pd.to_datetime(end_date).strftime('%B %d, %Y')
+        return f"Date Range: {start_date} -> {end_date}"
+    else: # Default
+        start_date = df['Start_Time'].min().strftime('%B %d, %Y')
+        end_date = df['Start_Time'].max().strftime('%B %d, %Y')
+        return f"Date Range: {start_date} -> {end_date}"
+    
 # Combined callback to update all graphs based on date range
 @dash.callback(
     [
         Output('choropleth-map', 'figure'),
         Output('treemap', 'figure'),
-        Output('graph', 'figure')
+        Output('linegraph', 'figure')
     ],
-    # Output('pie-chart-severity-1', 'figure'),
-    # Output('pie-chart-severity-2', 'figure'),
-    # Output('pie-chart-severity-3', 'figure'),
-    # Output('pie-chart-severity-4', 'figure')],
     Input('submit-button', 'n_clicks'),
     State('start-date-picker', 'date'),
     State('end-date-picker', 'date'),
@@ -374,13 +378,7 @@ def update_all_graphs(n_clicks, start_date, end_date, time_interval):
         # Update accidents over time
         accidents_over_time = create_accidents_over_time_graph(time_interval)
         
-        # Create pie charts
-        # pie_charts = create_pie_charts(filtered_df)
-        
-        return choropleth, treemap, accidents_over_time #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+        return choropleth, treemap, accidents_over_time 
     
     # Return original figures if no clicks
-    # pie_charts = create_pie_charts(df)
-    return create_choropleth(df), create_treemap(df), create_accidents_over_time_graph('DayOfTheMonth') #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
-
-logging.info('DONE HOME.PY')
+    return create_choropleth(df), create_treemap(df), create_accidents_over_time_graph('DayOfTheMonth')
