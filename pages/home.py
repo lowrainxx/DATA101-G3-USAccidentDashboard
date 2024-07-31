@@ -17,17 +17,20 @@ register_page(__name__, path='/')
 if df is None:
     raise ValueError("home.py : DataFrame is not loaded.")
 
+df['Start_Time'] = pd.to_datetime(df['Start_Time'])
 # Function to prepare data
 def prepare_data():
     byhour = df['Hour'].value_counts().reset_index()
     byhour.columns = ['Hour', 'Count']
+    
+    df['Month'] = df['Start_Time'].dt.to_period('M').astype(str)  # Ensure Month is in the correct format
     bymonth = df['Month'].value_counts().reset_index()
     bymonth.columns = ['Month', 'Count']
+    bymonth['Month'] = pd.to_datetime(bymonth['Month'])
+    bymonth = bymonth.sort_values(by="Month")
+    
     byday = df['Day'].value_counts().reset_index()
     byday.columns = ['Day', 'Count']
-
-    byhour = byhour.sort_values(by="Hour")
-    bymonth = bymonth.sort_values(by="Month")
     byday = byday.sort_values(by="Day")
 
     return df, byhour, bymonth, byday
@@ -137,13 +140,42 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
     return fig_stacked_bar
 
 #Line chart accidents over time
-def create_accidents_over_time_graph(selected_option):
+# def create_accidents_over_time_graph(selected_option):
+#     if selected_option == 'Hour':
+#         fig = px.line(byhour, x='Hour', y='Count', title='Accidents by Hour')
+#     elif selected_option == 'DayOfTheMonth':
+#         fig = px.line(byday, x='Day', y='Count', title='Accidents by Day of the Month')
+#     elif selected_option == 'Monthly':
+#         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
+#     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+#     return fig
+
+def create_accidents_over_time_graph(selected_option, filtered_df=None):
+    if filtered_df is None:
+        filtered_df = df
+
     if selected_option == 'Hour':
-        fig = px.line(byhour, x='Hour', y='Count', title='Accidents by Hour')
+        filtered_df['Hour'] = filtered_df['Start_Time'].dt.hour
+        data = filtered_df['Hour'].value_counts().reset_index()
+        data.columns = ['Hour', 'Count']
+        data = data.sort_values(by='Hour')
+        fig = px.line(data, x='Hour', y='Count', title='Accidents by Hour')
+
     elif selected_option == 'DayOfTheMonth':
-        fig = px.line(byday, x='Day', y='Count', title='Accidents by Day of the Month')
+        filtered_df['Day'] = filtered_df['Start_Time'].dt.day
+        data = filtered_df['Day'].value_counts().reset_index()
+        data.columns = ['Day', 'Count']
+        data = data.sort_values(by='Day')
+        fig = px.line(data, x='Day', y='Count', title='Accidents by Day of the Month')
+
     elif selected_option == 'Monthly':
-        fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
+        filtered_df['Month'] = filtered_df['Start_Time'].dt.to_period('M').astype(str)
+        data = filtered_df['Month'].value_counts().reset_index()
+        data.columns = ['Month', 'Count']
+        data['Month'] = pd.to_datetime(data['Month'])
+        data = data.sort_values(by='Month')
+        fig = px.line(data, x='Month', y='Count', title='Accidents by Month')
+
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     return fig
 
@@ -222,7 +254,7 @@ layout = html.Div([
             min=0,
             max=(df['Start_Time'].max() - df['Start_Time'].min()).days,
             value=[0, (df['Start_Time'].max() - df['Start_Time'].min()).days],
-            marks={int((date - start_date).days): date.strftime('%Y-%m') for date in date_range}, 
+            marks={int((date - df['Start_Time'].min()).days): date.strftime('%Y-%m') for date in date_range},
             tooltip={"placement": "bottom", "always_visible": True},
             className="date-range-slider"
         ),
@@ -247,7 +279,7 @@ layout = html.Div([
         html.Div([
             dcc.Graph(id='treemap')
         ], style={'display': 'inline-block', 'width': '40%', 'vertical-align': 'top'})
-    ], style={'width': '100%', 'height': '100%' , 'display': 'flex'}),
+    ], style={'width': '100%', 'height': '100%', 'display': 'flex'}),
 
     html.H2('Number of Accidents over Time'),
     dcc.RadioItems(
@@ -263,9 +295,8 @@ layout = html.Div([
     html.Div(children=[
         dcc.Graph(id='graph')
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'width': '48%', 'margin': '0 auto'}),
-    ##
+
     # Filter dropdown for weather condition
-    # Stacked bar chart for severity and weather conditions
     html.H2('Accidents by Severity and Weather Conditions'),
     html.Div([
         html.Label('Weather Condition'),
@@ -275,7 +306,7 @@ layout = html.Div([
                 {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
             ] + [{'label': condition, 'value': condition} for condition in
                 ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
-                'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
+                 'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
             value=['All'],  # Default value
             multi=True,  # Allow multiple selections
             style={'width': '300px', 'margin': '0'}
@@ -300,18 +331,20 @@ layout = html.Div([
 #         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
 #     return fig
 
+
+
 # Standalone callback to update the stacked bar chart based on the weather condition dropdown
-@dash.callback(
-    Output('severity-weather-stacked-bar', 'figure'),
-    [Input('weather-condition-dropdown', 'value')],
-    [State('start-date-picker', 'date'),
-     State('end-date-picker', 'date')]
-)
-def update_stacked_bar_chart(selected_weather_conditions, start_date, end_date):
-    filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+# @dash.callback(
+#     Output('severity-weather-stacked-bar', 'figure'),
+#     [Input('weather-condition-dropdown', 'value')],
+#     [State('start-date-picker', 'date'),
+#      State('end-date-picker', 'date')]
+# )
+# def update_stacked_bar_chart(selected_weather_conditions, start_date, end_date):
+#     filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
     
-    # Update stacked bar chart with selected weather conditions
-    return create_stacked_bar_chart(filtered_df, selected_weather_conditions)
+#     # Update stacked bar chart with selected weather conditions
+#     return create_stacked_bar_chart(filtered_df, selected_weather_conditions)
 
 # Callback to sync date picker and slider
 @dash.callback(
@@ -338,41 +371,109 @@ def sync_date_picker_slider(slider_range, start_date, end_date):
     return start_date, end_date, slider_range
 
 # Combined callback to update all graphs based on date range
+# @dash.callback(
+#     [
+#         Output('choropleth-map', 'figure'),
+#         Output('treemap', 'figure'),
+#         Output('graph', 'figure')
+#     ],
+#     # Output('pie-chart-severity-1', 'figure'),
+#     # Output('pie-chart-severity-2', 'figure'),
+#     # Output('pie-chart-severity-3', 'figure'),
+#     # Output('pie-chart-severity-4', 'figure')],
+#     Input('submit-button', 'n_clicks'),
+#     State('start-date-picker', 'date'),
+#     State('end-date-picker', 'date'),
+#     State('radioitems', 'value')
+# )
+# def update_all_graphs(n_clicks, start_date, end_date, time_interval):
+#     if n_clicks > 0:
+#         filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+
+#         # Update choropleth map
+#         choropleth = create_choropleth(filtered_df)
+        
+#         # Update treemap
+#         treemap = create_treemap(filtered_df)
+
+#         # Update accidents over time
+#         accidents_over_time = create_accidents_over_time_graph(time_interval)
+        
+#         # Create pie charts
+#         # pie_charts = create_pie_charts(filtered_df)
+        
+#         return choropleth, treemap, accidents_over_time #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+    
+#     # Return original figures if no clicks
+#     # pie_charts = create_pie_charts(df)
+#     return create_choropleth(df), create_treemap(df), create_accidents_over_time_graph('DayOfTheMonth') 
+#     #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+
+# @dash.callback(
+#     [
+#         Output('choropleth-map', 'figure'),
+#         Output('treemap', 'figure'),
+#         Output('graph', 'figure')
+#     ],
+#     Input('submit-button', 'n_clicks'),
+#     Input('radioitems', 'value'),
+#     State('start-date-picker', 'date'),
+#     State('end-date-picker', 'date')
+# )
+# def update_all_graphs(n_clicks, selected_option, start_date, end_date):
+#     # Filter dataframe based on date range
+#     if n_clicks > 0 and start_date and end_date:
+#         filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+#     else:
+#         filtered_df = df
+
+#     # Update choropleth map
+#     choropleth = create_choropleth(filtered_df)
+
+#     # Update treemap
+#     treemap = create_treemap(filtered_df)
+
+#     # Update accidents over time graph based on selected option
+#     accidents_over_time = create_accidents_over_time_graph(selected_option, filtered_df)
+    
+#     return choropleth, treemap, accidents_over_time
+
 @dash.callback(
     [
         Output('choropleth-map', 'figure'),
         Output('treemap', 'figure'),
-        Output('graph', 'figure')
+        Output('graph', 'figure'),
+        Output('severity-weather-stacked-bar', 'figure')
     ],
-    # Output('pie-chart-severity-1', 'figure'),
-    # Output('pie-chart-severity-2', 'figure'),
-    # Output('pie-chart-severity-3', 'figure'),
-    # Output('pie-chart-severity-4', 'figure')],
-    Input('submit-button', 'n_clicks'),
-    State('start-date-picker', 'date'),
-    State('end-date-picker', 'date'),
-    State('radioitems', 'value')
+    [
+        Input('submit-button', 'n_clicks'),
+        Input('radioitems', 'value'),
+        Input('weather-condition-dropdown', 'value')
+    ],
+    [
+        State('start-date-picker', 'date'),
+        State('end-date-picker', 'date')
+    ]
 )
-def update_all_graphs(n_clicks, start_date, end_date, time_interval):
-    if n_clicks > 0:
+def update_all_graphs(n_clicks, selected_option, selected_weather_conditions, start_date, end_date):
+    # Filter dataframe based on date range
+    if n_clicks > 0 and start_date and end_date:
         filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+    else:
+        filtered_df = df
 
-        # Update choropleth map
-        choropleth = create_choropleth(filtered_df)
-        
-        # Update treemap
-        treemap = create_treemap(filtered_df)
+    # Update choropleth map
+    choropleth = create_choropleth(filtered_df)
 
-        # Update accidents over time
-        accidents_over_time = create_accidents_over_time_graph(time_interval)
-        
-        # Create pie charts
-        # pie_charts = create_pie_charts(filtered_df)
-        
-        return choropleth, treemap, accidents_over_time #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+    # Update treemap
+    treemap = create_treemap(filtered_df)
+
+    # Update accidents over time graph based on selected option
+    accidents_over_time = create_accidents_over_time_graph(selected_option, filtered_df)
     
-    # Return original figures if no clicks
-    # pie_charts = create_pie_charts(df)
-    return create_choropleth(df), create_treemap(df), create_accidents_over_time_graph('DayOfTheMonth') #, pie_charts[0], pie_charts[1], pie_charts[2], pie_charts[3]
+    # Update stacked bar chart with selected weather conditions
+    stacked_bar_chart = create_stacked_bar_chart(filtered_df, selected_weather_conditions)
+    
+    return choropleth, treemap, accidents_over_time, stacked_bar_chart
 
 logging.info('DONE HOME.PY')
