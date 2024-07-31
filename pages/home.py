@@ -17,17 +17,25 @@ register_page(__name__, path='/')
 if df is None:
     raise ValueError("home.py : DataFrame is not loaded.")
 
+ # Convert 'Start_Time' to datetime format
+df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+
 # Function to prepare data
 def prepare_data():
+
+    # Calculate value counts for each hour, day, and month
     byhour = df['Hour'].value_counts().reset_index()
     byhour.columns = ['Hour', 'Count']
+    byhour = byhour.sort_values(by="Hour")
+
+    df['Month'] = df['Start_Time'].dt.to_period('M').astype(str)  # Ensure Month is in the correct format
     bymonth = df['Month'].value_counts().reset_index()
     bymonth.columns = ['Month', 'Count']
+    bymonth['Month'] = pd.to_datetime(bymonth['Month'])
+    bymonth = bymonth.sort_values(by="Month")
+    
     byday = df['Day'].value_counts().reset_index()
     byday.columns = ['Day', 'Count']
-
-    byhour = byhour.sort_values(by="Hour")
-    bymonth = bymonth.sort_values(by="Month")
     byday = byday.sort_values(by="Day")
 
     return df, byhour, bymonth, byday
@@ -118,24 +126,37 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
         title='Number of Accidents by Severity and Weather Conditions',
         labels={'Count': 'Number of Accidents'},
     )
-    fig_stacked_bar.update_layout(
-        width=1800, 
-        height=800
-    )  
+    fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
     return fig_stacked_bar
 
 #Line chart accidents over time
-def create_accidents_over_time_graph(selected_option):
+def create_accidents_over_time_graph(selected_option, filtered_df=None):
+    if filtered_df is None:
+        filtered_df = df
+
     if selected_option == 'Hour':
-        fig = px.line(byhour, x='Hour', y='Count', title='Accidents by Hour')
+        filtered_df['Hour'] = filtered_df['Start_Time'].dt.hour
+        data = filtered_df['Hour'].value_counts().reset_index()
+        data.columns = ['Hour', 'Count']
+        data = data.sort_values(by='Hour')
+        fig = px.line(data, x='Hour', y='Count', title='Accidents by Hour')
+
     elif selected_option == 'DayOfTheMonth':
-        fig = px.line(byday, x='Day', y='Count', title='Accidents by Day of the Month')
+        filtered_df['Day'] = filtered_df['Start_Time'].dt.day
+        data = filtered_df['Day'].value_counts().reset_index()
+        data.columns = ['Day', 'Count']
+        data = data.sort_values(by='Day')
+        fig = px.line(data, x='Day', y='Count', title='Accidents by Day of the Month')
+
     elif selected_option == 'Monthly':
-        fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
+        filtered_df['Month'] = filtered_df['Start_Time'].dt.to_period('M').astype(str)
+        data = filtered_df['Month'].value_counts().reset_index()
+        data.columns = ['Month', 'Count']
+        data['Month'] = pd.to_datetime(data['Month'])
+        data = data.sort_values(by='Month')
+        fig = px.line(data, x='Month', y='Count', title='Accidents by Month')
+
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     return fig
 
 df['Start_Time'] = pd.to_datetime(df['Start_Time'])
@@ -285,33 +306,6 @@ layout = html.Div([
     ], id='stackedbar-container'), 
 ])
 
-# Callback to update line graph
-# @dash.callback(
-#     Output('linegraph', 'figure'),
-#     Input('radioitems', 'value')
-# )
-# def update_graph(selected_option):
-#     if selected_option == 'Hour':
-#         fig = px.line(byhour, x='Hour', y='Count', title='Accidents by Hour')
-#     elif selected_option == 'DayOfTheMonth':
-#         fig = px.line(byday, x='Day', y='Count', title='Accidents by Day of the Month')
-#     elif selected_option == 'Monthly':
-#         fig = px.line(bymonth, x='Month', y='Count', title='Accidents by Month')
-#     return fig
-
-# Standalone callback to update the stacked bar chart based on the weather condition dropdown
-@dash.callback(
-    Output('severity-weather-stacked-bar', 'figure'),
-    [Input('weather-condition-dropdown', 'value')],
-    [State('start-date-picker', 'date'),
-     State('end-date-picker', 'date')]
-)
-def update_stacked_bar_chart(selected_weather_conditions, start_date, end_date):
-    filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
-    
-    # Update stacked bar chart with selected weather conditions
-    return create_stacked_bar_chart(filtered_df, selected_weather_conditions)
-
 # Callback to sync date picker and slider
 @dash.callback(
     [Output('start-date-picker', 'date'),
@@ -358,27 +352,36 @@ def update_date_range_display(n_clicks, start_date, end_date):
     [
         Output('choropleth-map', 'figure'),
         Output('treemap', 'figure'),
-        Output('linegraph', 'figure')
+        Output('linegraph', 'figure'),
+        Output('severity-weather-stacked-bar', 'figure')
     ],
-    Input('submit-button', 'n_clicks'),
-    State('start-date-picker', 'date'),
-    State('end-date-picker', 'date'),
-    State('radioitems', 'value')
+    [
+        Input('submit-button', 'n_clicks'),
+        Input('radioitems', 'value'),
+        Input('weather-condition-dropdown', 'value')
+    ],
+    [
+        State('start-date-picker', 'date'),
+        State('end-date-picker', 'date')
+    ]
 )
-def update_all_graphs(n_clicks, start_date, end_date, time_interval):
-    if n_clicks > 0:
+def update_all_graphs(n_clicks, selected_option, selected_weather_conditions, start_date, end_date):
+    # Filter dataframe based on date range
+    if n_clicks > 0 and start_date and end_date:
         filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+    else:
+        filtered_df = df
 
-        # Update choropleth map
-        choropleth = create_choropleth(filtered_df)
-        
-        # Update treemap
-        treemap = create_treemap(filtered_df)
+    # Update choropleth map
+    choropleth = create_choropleth(filtered_df)
 
-        # Update accidents over time
-        accidents_over_time = create_accidents_over_time_graph(time_interval)
-        
-        return choropleth, treemap, accidents_over_time 
+    # Update treemap
+    treemap = create_treemap(filtered_df)
+
+    # Update accidents over time graph based on selected option
+    accidents_over_time = create_accidents_over_time_graph(selected_option, filtered_df)
     
-    # Return original figures if no clicks
-    return create_choropleth(df), create_treemap(df), create_accidents_over_time_graph('DayOfTheMonth')
+    # Update stacked bar chart with selected weather conditions
+    stacked_bar_chart = create_stacked_bar_chart(filtered_df, selected_weather_conditions)
+    
+    return choropleth, treemap, accidents_over_time, stacked_bar_chart
