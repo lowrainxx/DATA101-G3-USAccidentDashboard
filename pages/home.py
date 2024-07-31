@@ -247,7 +247,7 @@ layout = html.Div([
             max=(df['Start_Time'].max() - df['Start_Time'].min()).days,
             value=[0, (df['Start_Time'].max() - df['Start_Time'].min()).days],
             marks=marks,
-            tooltip={"placement": "bottom", "always_visible": True},
+            tooltip={"always_visible": False},
             className="date-range-slider"
         ),
         # End Date Picker
