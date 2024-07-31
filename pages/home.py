@@ -142,6 +142,7 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
         return px.bar(title='No Data Available for Selected Filters')
 
     severity_weather = pd.concat(weather_conditions, ignore_index=True)
+    severity_weather['Severity'] = severity_weather['Severity'].astype(str)
 
     # Sorting by total count per weather condition
     total_counts = severity_weather.groupby('Weather_Condition')['Count'].sum().reset_index()
@@ -158,10 +159,51 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
         x='Weather_Condition',
         y='Count',
         color='Severity',
-        title='Number of Accidents by Severity and Weather Conditions',
         labels={'Count': 'Number of Accidents'},
+        color_discrete_map={
+            '1': '#fae363', # Light yellow
+            '2': '#636efa', # Purpleish Blue
+            '3': 'rgb(250, 167, 99)', # Light Orange
+            '4': '#63d7fa', # Cyan
+        },
     )
-    fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
+    fig_stacked_bar.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=800,
+        margin=dict(l=1, r=1, t=30, b=50),
+        xaxis=dict(
+            title=dict(
+                text='Weather Condition',
+                font=dict(
+                    size=20, color='lightblue', weight='bold'   
+                )
+            ),
+            tickfont=dict(
+                size=20, color='yellow'  
+            ),
+            linecolor='white', linewidth=2, 
+        ),
+        yaxis=dict(
+            title=dict(
+                text='Number of Accidents',
+                font=dict(
+                    size=25, color='lightblue',  weight='bold'   
+                )
+            ),
+            tickfont=dict(
+                size=20, color='yellow' , 
+            ),
+            linecolor='white', linewidth=2, 
+        ),
+        legend=dict(
+            title=dict(
+                text="Severity",
+                font=dict(size=25, color='yellow', weight='bold')
+            ),
+            font=dict(size=30, color='yellow'),
+        )
+    )  
     return fig_stacked_bar
 
 # Line chart accidents over time
@@ -181,7 +223,7 @@ def create_line_graph(selected_option, filtered_df):
         data = filtered_df['Day'].value_counts().reset_index()
         data.columns = ['Day', 'Count']
         data = data.sort_values(by='Day')
-        fig = px.line(data, x='Day', y='Count', title='Accidents by Day of the Month', markers=True)
+        fig = px.line(data, x='Day', y='Count', title='Accidents by Day', markers=True)
 
     elif selected_option == 'Monthly':
         filtered_df['Month'] = filtered_df['Start_Time'].dt.to_period('M').astype(str)
@@ -203,7 +245,7 @@ def create_line_graph(selected_option, filtered_df):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', 
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=1, r=1, t=1, b=1),
+        margin=dict(l=1, r=1, t=30, b=1),
         title={
             'font': {
                 'size': 28, 'color': 'Yellow', 'weight': 'bold',
@@ -378,34 +420,26 @@ layout = html.Div([
         ], id='linegraph-container')
     ], className='linegraph-container'), 
 
-    ##
-    # Filter dropdown for weather condition
     # Stacked bar chart for severity and weather conditions
     html.Div([
         html.H2('Accidents by Severity and Weather Conditions', id='stackedbar-label'),
         html.Div([
-            html.Label('Weather Condition'),
             html.Div([
-                dcc.Dropdown(
-                    id='weather-condition-dropdown',
-                    options=[
-                        {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
-                    ] + [{'label': condition, 'value': condition} for condition in
-                        ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
-                        'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
-                    value=['All'],  # Default value
-                    multi=True,  # Allow multiple selections
-                    style={'width': '300px', 'margin': '0'}
-                ),
-                html.Div([
-                    html.Button(
-                        html.I(className='fas fa-filter'), 
-                        id='filter-button',
-                        className='filter-icon-button'
-                    ),
-                ], className='filter-button-container'),
-            ], id='stackedbar-filter-container'),
-        ], id='stackedbar-filters-container'),
+                html.I(className='fas fa-filter'), 
+            ], id='stackedbar-filter-icon'),
+            html.Label('Weather Condition Filter'),
+            dcc.Dropdown(
+                id='weather-condition-dropdown',
+                options=[
+                    {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
+                ] + [{'label': condition, 'value': condition} for condition in
+                    ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+                    'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
+                value=['All'],  # Default value
+                multi=True,  # Allow multiple selections
+                style={'width': '300px', 'margin': '0'}
+            ),
+        ], id='stackedbar-filter-container'),
         html.Div(children=[
                 dcc.Graph(id='severity-weather-stacked-bar')
             ], id='stackedbarchart-container'
@@ -463,19 +497,16 @@ def update_date_range_display(n_clicks, start_date, end_date):
         return f"{start_date} -> {end_date}"
 
 # Combined callback to update all graphs based on date range
-@dash.callback(
-    [
+@dash.callback([
         Output('choropleth-map', 'figure'),
         Output('treemap', 'figure'),
         Output('linegraph', 'figure'),
         Output('severity-weather-stacked-bar', 'figure')
-    ],
-    [
+    ],[
         Input('submit-button', 'n_clicks'),
         Input('linegraph-radioitems', 'value'),
         Input('weather-condition-dropdown', 'value')
-    ],
-    [
+    ],[
         State('start-date-picker', 'date'),
         State('end-date-picker', 'date')
     ]
