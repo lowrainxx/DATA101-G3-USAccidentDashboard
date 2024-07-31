@@ -52,7 +52,7 @@ def create_choropleth(filtered_df):
         color='Accident_Count',
         scope="usa",
         labels={'Accident_Count': 'Accident Count'},
-        color_continuous_scale="Viridis"
+        color_continuous_scale="cividis",
     )
     fig_choropleth.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', 
@@ -60,28 +60,64 @@ def create_choropleth(filtered_df):
         width=1200, height=800,
         margin=dict(l=1, r=1, t=1, b=1),
         geo=dict(
-            bgcolor='white', # Set background color of the choropleth
-            showcoastlines=True,
+            bgcolor='rgba(0,0,0,0)', # Set background color of the choropleth
+            visible=True,
+            lakecolor='rgba(0,0,0,0)',  
+            showland=True,
+            landcolor='rgba(0,0,0,0)',  
         ),
+        coloraxis_colorbar=dict(
+            title="Accident Count",
+            orientation="h",
+            tickfont=dict(size=15, color='Yellow'),  
+            title_font=dict(size=20, color='Yellow', weight='bold'),  
+            len=0.9, 
+            thickness=10, 
+            x=0.5,  # Center horizontally
+            xanchor="center",  # Center the color bar horizontally
+            y=0.9,  # Position above the plot
+            yanchor="bottom"  # Anchor at the bottom of the specified y value
+        )
     ) 
     return fig_choropleth
 
 # Treemap based on accident counts per city within states
 def create_treemap(filtered_df):
     state_city_counts = filtered_df.groupby(['State', 'City']).size().reset_index(name='Counts')
-    top_cities_per_state = state_city_counts.groupby('State').apply(lambda x: x.nlargest(10, 'Counts')).reset_index(drop=True)
-    top_states = top_cities_per_state.groupby('State')['Counts'].sum().nlargest(5).index
-    top_cities_top_states = top_cities_per_state[top_cities_per_state['State'].isin(top_states)]
+    top_states = state_city_counts.groupby('State')['Counts'].sum().nlargest(5).index
+    top_cities_top_states = state_city_counts[state_city_counts['State'].isin(top_states)]
+
+    # If you want to show more or fewer cities per state, adjust here
+    # top_cities_per_state = top_cities_top_states.groupby('State').apply(lambda x: x.nlargest(10, 'Counts')).reset_index(drop=True)
 
     fig_treemap = px.treemap(
         top_cities_top_states,
         path=['State', 'City'],
         values='Counts',
-        title="Top 10 Cities per Top 5 States by Accident Counts"
+        title="Top 5 States by Accident Counts",
+        color_discrete_sequence=px.colors.sequential.haline,
     )
+
     fig_treemap.update_layout(
-        width=700, 
-        height=700
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)', # Transparent background
+        width=1000, height=700,
+        margin=dict(l=1, r=20, t=30, b=1),
+        geo=dict(
+            bgcolor='rgba(0,0,0,0)', # Set background color of the choropleth
+        ),title={
+            'text': "Top 5 States by Accident Counts",
+            'font': {
+                'size': 20,  
+                'color': 'Yellow', 
+                'family': 'Arial, sans-serif',
+                'weight': 'bold',
+            },
+            'x': 0.5,  # Center align title horizontally
+            'xanchor': 'center',  # Horizontal anchor point
+            'y': 1,  # Vertical position of title
+            'yanchor': 'top'  # Vertical anchor point
+        },
     )
     return fig_treemap
 
@@ -257,11 +293,12 @@ layout = html.Div([
             max_date_allowed=df['Start_Time'].max().date(),
             initial_visible_month=df['Start_Time'].max().date(),
             date=df['Start_Time'].max().date(),
-            display_format='YYYY-MM-DD'
+            display_format='YYYY-MM-DD',
         ),
-        # Submit
-        html.Button('Submit', id='submit-button', n_clicks=0)
     ], className='datepicker-container'),
+    html.Div([
+        html.Button('Change Date Range', id='submit-button', n_clicks=0),
+    ], className='submit-button-container'),
 
     # Chloropleth & Tree Map
     html.Div([

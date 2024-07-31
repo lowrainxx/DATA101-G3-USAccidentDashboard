@@ -13,7 +13,7 @@
   margin: 10px; 
   flex: 1; 
   min-width: 150px; 
-  border: 2px solid yellow;
+  border: 2px solid lightblue;
   border-radius: 5px; 
   padding: 10px; 
 }
@@ -31,7 +31,7 @@
   color: whitesmoke;
 }
 
-/* Date Picker */
+/* Date Range */
 #date-range-display{
   margin-bottom: 20px;
   font-size: 30px;
@@ -67,14 +67,26 @@
   padding-right: 20px;
 }
 
+/* Date Container */
 .datepicker-container {
   display: flex;
   justify-content: center; 
   align-items: center;
   margin: 10px 0; 
-  gap: 50px;
+  gap: 30px;
 }
 
+/* Date Picker */
+#start-date-picker input , #end-date-picker input {
+  text-align: center;
+  justify-content: center;
+  background-color: yellow;
+  font-size: 20px;
+  color: black;
+  font-weight: bolder;
+}
+
+/* Date Slider */
 .date-range-slider {
     width: 80%; 
     margin: 10px 0; 
@@ -105,28 +117,53 @@
   color: white;
 }
 
+/* Date - Submit */
+#submit-button{
+  font-size: 20px;
+  background-color: yellow;
+  color: black;
+  padding: 10px 100px;
+  border: 2px solid black;
+  border-radius: 10px;
+  font-weight: bolder;
+  letter-spacing: 2px;
+}
+
+#submit-button:hover{
+  font-size: 20px;
+  background-color: lightblue;
+}
+
+.submit-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Chloropleth and Tree Container */
-.ct-container{
+#ct-container{
   width: 100%;
   height: 100%;
   display: flex;
+  justify-content: space-between;
+  align-items: stretch;
 }
 
 /* Chloropleth Map */
 #chloropleth-map-container {
-  display: inline-block;
-  vertical-align: top;
+  flex: 60%; 
+  display: flex;
 }
 
 /* Tree Map */
-.treemap {
-  height: 400px; 
+#treemap-container{
+  flex: 40%; 
+  display: flex;
+  margin-top: 20px;
 }
 
-.treemap-container{
-  display: inline-block;
-  width: 40%;
-  vertical-align: top;
+#treemap {
+  height: 100%; 
 }
 
 /* Line Graph */

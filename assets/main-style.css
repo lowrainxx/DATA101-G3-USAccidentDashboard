@@ -26,6 +26,7 @@ body, html {
         rgba(0, 0, 0, 0) 40px,
         rgba(0, 0, 0, 0) 80px
     ) 5;
+    font-family: "Verdana", "sans-serif";
 }
 
 .nav-link {
@@ -81,6 +82,7 @@ body, html {
     font-size: 40px;
     font-weight: bolder;
     pointer-events: none;
+    font-family: "Helvetica", "sans-serif";
 }
 
 .title:hover {
