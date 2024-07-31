@@ -26,7 +26,11 @@ app.layout = html.Div([
         dcc.Link('Home', href='/', className='nav-link', id='link-home'),
         dcc.Link('Database', href='/database', className='nav-link', id='link-database'),
         html.Span(f"US Accidents 2020-2022", className='title'),
-        html.Span(f"Total Accidents: {total_accidents}", className='total-accidents')
+        html.Div([
+            html.Span(f"Total Accidents: ", className='total-accidents-text'),
+            html.Span(f"{total_accidents}", className='total-accidents-value')
+        ], className='total-accidents'),
+        
     ], className='navbar'),
     
     dash.page_container,  # Loads page starting here
@@ -37,11 +41,9 @@ app.layout = html.Div([
 @app.callback(
     [Output('link-home', 'className'),
      Output('link-database', 'className')],
-    [Input('url', 'pathname'),
-     Input('link-home', 'n_clicks'),
-     Input('link-database', 'n_clicks')]
+    Input('url', 'pathname')
 )
-def update_active_link(pathname, n_clicks_home, n_clicks_database):
+def update_active_link(pathname):
     if pathname == '/':
         return ['nav-link active', 'nav-link']
     elif pathname == '/database':

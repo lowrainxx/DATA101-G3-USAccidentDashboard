@@ -179,6 +179,14 @@ df, byhour, bymonth, byday = prepare_data()
 def format_number_with_spaces(number):
     return '{:,.0f}'.format(number).replace(',', ' ')
 
+# Update the date range slider marks to include static start and end marks
+marks = {int((date - df['Start_Time'].min()).days): date.strftime('%Y-%m') 
+         for date in pd.date_range(df['Start_Time'].min(), df['Start_Time'].max(), freq='6MS')}
+
+# Add static start and end marks
+marks[0] = '2020-01-01'
+marks[int((df['Start_Time'].max() - df['Start_Time'].min()).days)] = '2022-12-31'
+
 # Define the layout for the home page
 layout = html.Div([
 
@@ -217,7 +225,11 @@ layout = html.Div([
     ]),
 
     # Date Range
-    html.Div(id='date-range-display'),
+    html.Div([
+        html.Span('Date Range: ', id='date-range-label'),
+        html.Span(id='date-range')
+        ], id='date-range-display'
+    ),
     html.Div([
         # Start Date Picker
         dcc.DatePickerSingle(
@@ -234,7 +246,7 @@ layout = html.Div([
             min=0,
             max=(df['Start_Time'].max() - df['Start_Time'].min()).days,
             value=[0, (df['Start_Time'].max() - df['Start_Time'].min()).days],
-            marks={int((date - start_date).days): date.strftime('%Y-%m') for date in date_range}, 
+            marks=marks,
             tooltip={"placement": "bottom", "always_visible": True},
             className="date-range-slider"
         ),
@@ -313,40 +325,48 @@ layout = html.Div([
      Output('date-range-slider', 'value')],
     [Input('date-range-slider', 'value'),
      Input('start-date-picker', 'date'),
-     Input('end-date-picker', 'date')]
+     Input('end-date-picker', 'date')],
+    [State('start-date-picker', 'date'),
+     State('end-date-picker', 'date'),
+     State('date-range-slider', 'value')]
 )
-def sync_date_picker_slider(slider_range, start_date, end_date):
+def sync_date_picker_slider(slider_range, start_date, end_date, current_start_date, current_end_date, current_slider_range):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if triggered_id == 'date-range-slider':
         start_date = (df['Start_Time'].min() + pd.Timedelta(days=slider_range[0])).date()
         end_date = (df['Start_Time'].min() + pd.Timedelta(days=slider_range[1])).date()
+        return start_date, end_date, slider_range
+
     elif triggered_id in ['start-date-picker', 'end-date-picker']:
         start_date = pd.to_datetime(start_date).date()
         end_date = pd.to_datetime(end_date).date()
         slider_range[0] = (pd.to_datetime(start_date) - df['Start_Time'].min()).days
         slider_range[1] = (pd.to_datetime(end_date) - df['Start_Time'].min()).days
+        return start_date, end_date, slider_range
 
-    return start_date, end_date, slider_range
+    return current_start_date, current_end_date, current_slider_range
 
 # Callback to display selected date range
 @dash.callback(
-    Output('date-range-display', 'children'),
+    Output('date-range', 'children'),
     Input('submit-button', 'n_clicks'),
     State('start-date-picker', 'date'),
     State('end-date-picker', 'date')
 )
 def update_date_range_display(n_clicks, start_date, end_date):
+    df_copy = df.copy()  # Ensure we're working with a copy
+
     if n_clicks:
         start_date = pd.to_datetime(start_date).strftime('%B %d, %Y')
         end_date = pd.to_datetime(end_date).strftime('%B %d, %Y')
-        return f"Date Range: {start_date} -> {end_date}"
-    else: # Default
-        start_date = df['Start_Time'].min().strftime('%B %d, %Y')
-        end_date = df['Start_Time'].max().strftime('%B %d, %Y')
-        return f"Date Range: {start_date} -> {end_date}"
-    
+        return f"{start_date} -> {end_date}"
+    else:  # Default
+        start_date = df_copy['Start_Time'].min().strftime('%B %d, %Y')
+        end_date = df_copy['Start_Time'].max().strftime('%B %d, %Y')
+        return f"{start_date} -> {end_date}"
+
 # Combined callback to update all graphs based on date range
 @dash.callback(
     [
@@ -368,9 +388,9 @@ def update_date_range_display(n_clicks, start_date, end_date):
 def update_all_graphs(n_clicks, selected_option, selected_weather_conditions, start_date, end_date):
     # Filter dataframe based on date range
     if n_clicks > 0 and start_date and end_date:
-        filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)]
+        filtered_df = df[(df['Start_Time'] >= start_date) & (df['Start_Time'] <= end_date)].copy()  # Ensure we're working with a copy
     else:
-        filtered_df = df
+        filtered_df = df.copy()
 
     # Update choropleth map
     choropleth = create_choropleth(filtered_df)

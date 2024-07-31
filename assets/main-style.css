@@ -67,15 +67,18 @@ body, html {
     color: inherit;
 }
 
+.total-accidents-value {
+    color: yellow;
+}
+
 /* Title */
 .title {
     float: right;
     margin-left: auto;
-    color: white; 
+    color: rgb(210, 235, 255); 
     padding: 14px 16px;
     text-align: center;
-    text-decoration: none;
-    font-size: 35px;
+    font-size: 40px;
     font-weight: bolder;
     pointer-events: none;
 }

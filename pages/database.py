@@ -39,8 +39,7 @@ layout = html.Div(
                     id='search-button', 
                     n_clicks=0
                 ),
-            ],
-            style={'marginBottom': '20px'}
+            ], id='search-container'
         ),
         dcc.ConfirmDialog(
             id='id-not-found-dialog',
@@ -65,16 +64,18 @@ layout = html.Div(
             style_table={'overflowX': 'auto'},
             style_cell={
                 'textAlign': 'center',
-                'minWidth': '100px', 'width': '100px', 'maxWidth': '100px'
+                'minWidth': '100px', 'width': '100px', 'maxWidth': '100px',
+                'color': 'black',
             },
             style_header={
                 'backgroundColor': 'rgb(230, 230, 230)',
-                'fontWeight': 'bold'
+                'fontWeight': 'bold',
+                'color': 'black',
             },
             style_data_conditional=[{
                 'if': {'state': 'active'},
                 'backgroundColor': 'rgba(0, 0, 0, 0.1)',  # light grey
-                'cursor': 'pointer'
+                'cursor': 'pointer',
             }]
         ),
         html.Div(

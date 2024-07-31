@@ -1,20 +1,3 @@
-/* Date Picker */
-.datepicker-container {
-  display: flex;
-  justify-content: center; 
-  align-items: center;
-  margin: 10px 0; 
-}
-
-.date-range-slider {
-    width: 80%; 
-    margin: 10px 0; 
-  }
-  
-#date-range-display{
-  margin-bottom: 20px;
-}
-
 /* Statistics */
 .stats {
   display: flex;
@@ -30,21 +13,93 @@
   margin: 10px; 
   flex: 1; 
   min-width: 150px; 
-  border: 1px solid #ddd;
+  border: 2px solid yellow;
   border-radius: 5px; 
   padding: 10px; 
 }
 
 .stat-value {
   display: block;
-  font-size: 24px; 
+  font-size: 30px; 
   margin-bottom: 5px;
   font-weight: bold;
+  color: yellow;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 20px;
   color: whitesmoke;
+}
+
+/* Date Picker */
+#date-range-display{
+  margin-bottom: 20px;
+  font-size: 30px;
+  text-align: center;
+  position: relative;
+}
+
+#date-range-display::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: yellow;
+  z-index: 0;
+}
+
+#date-range-label, #date-range {
+  background-color: rgb(37, 37, 37);
+  z-index: 1;
+  position: relative;
+}
+
+#date-range-label {
+  padding-left: 20px;
+  letter-spacing: 1px;
+}
+
+#date-range {
+  font-weight: bold;
+  letter-spacing: 3px;
+  padding-right: 20px;
+}
+
+.datepicker-container {
+  display: flex;
+  justify-content: center; 
+  align-items: center;
+  margin: 10px 0; 
+}
+
+.date-range-slider {
+    width: 80%; 
+    margin: 10px 0; 
+  }
+  
+.date-range-slider .rc-slider-track {
+    background-color: lightblue !important;  /* filled portion */
+    height: 15px;
+}
+
+.date-range-slider .rc-slider-handle {
+    border-color: black !important;
+    background-color: yellow !important;
+    height: 20px;
+    width: 20px;
+    margin-bottom: -2px;
+}
+
+.date-range-slider .rc-slider-rail {
+    background-color: rgb(117, 117, 117) !important;  /* unfilled portion */
+    height: 15px;
+}
+
+.date-range-slider .rc-slider-mark-text {
+  font-size: 20px;
+  color: white;
 }
 
 /* Chloropleth and Tree Container */
