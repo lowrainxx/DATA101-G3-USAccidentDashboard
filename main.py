@@ -8,7 +8,12 @@ from data import df
 logging.basicConfig(level=logging.INFO)
 
 # External Stylesheets
-external_stylesheets = ['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css']
+external_stylesheets = [
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+    'https://fonts.googleapis.com/css?family=Audiowide&effect=3d|3d-float',
+    'https://fonts.googleapis.com/css?family=Roboto+Mono',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
+]
 
 # Flask server
 server = Flask(__name__)
@@ -25,7 +30,7 @@ app.layout = html.Div([
     html.Nav([
         dcc.Link('Home', href='/', className='nav-link', id='link-home'),
         dcc.Link('Database', href='/database', className='nav-link', id='link-database'),
-        html.Span(f"US Accidents 2020-2022", className='title'),
+        html.Span(f"US Accidents 2020-2022", className='title font-effect-3d-float'),
         html.Div([
             html.Span(f"Total Accidents: ", className='total-accidents-text'),
             html.Span(f"{total_accidents}", className='total-accidents-value')

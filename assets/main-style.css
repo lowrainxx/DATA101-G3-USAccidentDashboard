@@ -6,6 +6,7 @@ body, html {
     width: 100%;
     color: white;
     background-color: rgb(37, 37, 37);
+    font-family: "Roboto Mono", "sans-serif";
 }
 
 /* Style for the navigation bar */
@@ -26,6 +27,7 @@ body, html {
         rgba(0, 0, 0, 0) 40px,
         rgba(0, 0, 0, 0) 80px
     ) 5;
+    font-family: "Verdana", "sans-serif";
 }
 
 .nav-link {
@@ -81,6 +83,7 @@ body, html {
     font-size: 40px;
     font-weight: bolder;
     pointer-events: none;
+    font-family: "Helvetica", "sans-serif";
 }
 
 .title:hover {

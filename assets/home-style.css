@@ -13,7 +13,7 @@
   margin: 10px; 
   flex: 1; 
   min-width: 150px; 
-  border: 2px solid yellow;
+  border: 2px solid lightblue;
   border-radius: 5px; 
   padding: 10px; 
 }
@@ -29,9 +29,10 @@
 .stat-label {
   font-size: 20px;
   color: whitesmoke;
+  font-family: "Helvetica", "sans-serif";
 }
 
-/* Date Picker */
+/* Date Range */
 #date-range-display{
   margin-bottom: 20px;
   font-size: 30px;
@@ -67,36 +68,52 @@
   padding-right: 20px;
 }
 
+/* Date Container */
 .datepicker-container {
   display: flex;
   justify-content: center; 
   align-items: center;
   margin: 10px 0; 
-  gap: 50px;
+  gap: 30px;
 }
 
+/* Date Picker */
+#start-date-picker input , #end-date-picker input {
+  text-align: center;
+  justify-content: center;
+  background-color: yellow;
+  font-size: 20px;
+  color: black;
+  font-weight: bolder;
+  letter-spacing: -1px;
+  font-family: "Roboto Mono", "sans-serif";
+}
+
+/* Date Slider */
 .date-range-slider {
-    width: 80%; 
-    margin: 10px 0; 
-    padding-right: 40px;
-  }
+  width: 80%; 
+  margin: 10px 0; 
+  padding-right: 40px;
+  font-family: "Helvetica", "sans-serif";
+    
+}
   
 .date-range-slider .rc-slider-track {
-    background-color: lightblue !important;  /* filled portion */
-    height: 15px;
+  background-color: lightblue !important;  /* filled portion */
+  height: 15px;
 }
 
 .date-range-slider .rc-slider-handle {
-    border-color: black !important;
-    background-color: yellow !important;
-    height: 20px;
-    width: 20px;
-    margin-bottom: -2px;
+  border-color: black !important;
+  background-color: yellow !important;
+  height: 20px;
+  width: 20px;
+  margin-bottom: -2px;
 }
 
 .date-range-slider .rc-slider-rail {
-    background-color: rgb(117, 117, 117) !important;  /* unfilled portion */
-    height: 15px;
+  background-color: rgb(117, 117, 117) !important;  /* unfilled portion */
+  height: 15px;
 }
 
 .date-range-slider .rc-slider-mark-text {
@@ -105,36 +122,112 @@
   color: white;
 }
 
+/* Date - Submit */
+#submit-button{
+  font-size: 20px;
+  background-color: yellow;
+  color: black;
+  padding: 10px 100px;
+  border: 2px solid black;
+  border-radius: 10px;
+  font-weight: bolder;
+  letter-spacing: 2px;
+}
+
+#submit-button:hover{
+  font-size: 20px;
+  background-color: lightblue;
+}
+
+.submit-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Chloropleth and Tree Container */
-.ct-container{
+#ct-container{
   width: 100%;
   height: 100%;
   display: flex;
+  justify-content: space-between;
+  align-items: stretch;
 }
 
 /* Chloropleth Map */
 #chloropleth-map-container {
-  display: inline-block;
-  vertical-align: top;
+  flex: 60%; 
+  display: flex;
 }
 
 /* Tree Map */
-.treemap {
-  height: 400px; 
+#treemap-container{
+  flex: 40%; 
+  display: flex;
+  margin-top: 20px;
 }
 
-.treemap-container{
-  display: inline-block;
-  width: 40%;
-  vertical-align: top;
+#treemap {
+  height: 100%; 
 }
 
 /* Line Graph */
-.linegraph-container {
+.linegraph-container { 
   display: flex;
-  flex-wrap: wrap;
-  width: 48%;
-  margin: 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: -50px;
+}
+
+#linegraph-label {
+  font-size: 30px;
+  color: yellow;
+  padding-bottom: 10px;
+  border-style: solid; 
+  border-width: 0 0 5px 0;
+  border-image: repeating-linear-gradient(
+      to right, 
+      white 0px,
+      white 40px,
+      rgba(0, 0, 0, 0) 40px,
+      rgba(0, 0, 0, 0) 80px
+  ) 5;
+}
+
+#linegraph-radioitems {
+  display: flex;
+  justify-content: center;
+  margin-top: -15px;
+  font-size: 20px;
+}
+
+#linegraph-radioitems input[type="radio"] {
+  margin-right: 5px; /* Space between radio button and label */
+  color: red;
+}
+
+#linegraph-radioitems label {
+  font-size: 25px; /* Adjust font size as needed */
+  color: white; 
+  margin-right: 25px;
+}
+
+.linegraph-radioitems-container label {
+  cursor: pointer;
+}
+
+#linegraph-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 10px auto;
+}
+
+#linegraph {
+  width: 90%;
+  height: auto;
 }
 
 /* Stacked Bar */
@@ -148,4 +241,16 @@
 .stackedbar-container {
   text-align: left;
   margin: 0 auto;
+}
+
+.filter-icon-button {
+  background: none;
+  border: none;
+  font-size: 24px; /* Adjust the size of the icon */
+  color: white;    /* Adjust the color of the icon */
+  cursor: pointer;
+}
+
+.filter-icon-button:hover {
+  color: blue;     /* Change icon color on hover */
 }
