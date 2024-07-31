@@ -10,33 +10,50 @@ body, html {
 
 /* Style for the navigation bar */
 .navbar {
-    background-color: #e65a5a;
+    background-color: inherit;
     display: flex;
     align-items: flex-end;
     padding: 10px 0; 
     font-size: 25px;
     font-weight: bold;
+    padding-bottom: 10px;
+    border-style: solid; 
+    border-width: 0 0 10px 0;
+    border-image: repeating-linear-gradient(
+        to right, 
+        yellow 0px,
+        yellow 40px,
+        rgba(0, 0, 0, 0) 40px,
+        rgba(0, 0, 0, 0) 80px
+    ) 5;
 }
 
 .nav-link {
     float: left;
     display: block;
-    color: rgb(0, 0, 0);
+    color: white;
     text-align: center;
     padding: 15px;
     text-decoration: none;
 }
 
 .nav-link:hover {
+    color: black;
+    background-color: rgb(255, 255, 158);
+}
+
+.nav-link.active{
     background-color: inherit;
-    color: white;
+    color: yellow;
+    text-decoration: underline;
+    text-underline-offset: 7px;
 }
 
 /* Total Accidents */
 .total-accidents {
     float: right;
     margin-left: auto;
-    color: black; 
+    color: white; 
     padding: 14px 16px; 
     text-align: center;
     text-decoration: none;
