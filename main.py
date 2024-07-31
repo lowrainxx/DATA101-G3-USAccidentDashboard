@@ -10,7 +10,9 @@ logging.basicConfig(level=logging.INFO)
 # External Stylesheets
 external_stylesheets = [
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
-    'https://fonts.googleapis.com/css?family=Audiowide&effect=3d|3d-float'
+    'https://fonts.googleapis.com/css?family=Audiowide&effect=3d|3d-float',
+    'https://fonts.googleapis.com/css?family=Roboto+Mono',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
 ]
 
 # Flask server

@@ -106,11 +106,10 @@ def create_treemap(filtered_df):
         geo=dict(
             bgcolor='rgba(0,0,0,0)', # Set background color of the choropleth
         ),title={
-            'text': "Top 5 States by Accident Counts",
+            'text': "Top 5 States with the Highest Accident Counts",
             'font': {
                 'size': 20,  
                 'color': 'Yellow', 
-                'family': 'Arial, sans-serif',
                 'weight': 'bold',
             },
             'x': 0.5,  # Center align title horizontally
@@ -165,8 +164,8 @@ def create_stacked_bar_chart(filtered_df, selected_weather_conditions):
     fig_stacked_bar.update_layout(width=1800, height=800)  # Adjust the size as needed
     return fig_stacked_bar
 
-#Line chart accidents over time
-def create_accidents_over_time_graph(selected_option, filtered_df=None):
+# Line chart accidents over time
+def create_line_graph(selected_option, filtered_df):
     if filtered_df is None:
         filtered_df = df
 
@@ -175,14 +174,14 @@ def create_accidents_over_time_graph(selected_option, filtered_df=None):
         data = filtered_df['Hour'].value_counts().reset_index()
         data.columns = ['Hour', 'Count']
         data = data.sort_values(by='Hour')
-        fig = px.line(data, x='Hour', y='Count', title='Accidents by Hour')
+        fig = px.line(data, x='Hour', y='Count', title='Accidents by Hour', markers=True)
 
     elif selected_option == 'DayOfTheMonth':
         filtered_df['Day'] = filtered_df['Start_Time'].dt.day
         data = filtered_df['Day'].value_counts().reset_index()
         data.columns = ['Day', 'Count']
         data = data.sort_values(by='Day')
-        fig = px.line(data, x='Day', y='Count', title='Accidents by Day of the Month')
+        fig = px.line(data, x='Day', y='Count', title='Accidents by Day of the Month', markers=True)
 
     elif selected_option == 'Monthly':
         filtered_df['Month'] = filtered_df['Start_Time'].dt.to_period('M').astype(str)
@@ -190,9 +189,56 @@ def create_accidents_over_time_graph(selected_option, filtered_df=None):
         data.columns = ['Month', 'Count']
         data['Month'] = pd.to_datetime(data['Month'])
         data = data.sort_values(by='Month')
-        fig = px.line(data, x='Month', y='Count', title='Accidents by Month')
+        fig = px.line(data, x='Month', y='Count', title='Accidents by Month', markers=True)
 
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_traces(
+        line=dict(
+            width=8, 
+        ),
+        marker=dict(
+            size=15, color='yellow', 
+        )
+    )
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=1, r=1, t=1, b=1),
+        title={
+            'font': {
+                'size': 28, 'color': 'Yellow', 'weight': 'bold',
+            },
+        'x': 0.1,  # Center align title horizontally
+        'xanchor': 'center',  # Horizontal anchor point
+        'y': 1,  # Vertical position of title
+        'yanchor': 'top'  # Vertical anchor point
+        },
+        xaxis=dict(
+            title=dict(
+                text='Time Period',
+                font=dict(
+                    size=20, color='lightblue', weight='bold'   
+                )
+            ),
+            tickfont=dict(
+                size=20, color='yellow'  
+            ),
+            linecolor='white', linewidth=2, 
+        ),
+        yaxis=dict(
+            title=dict(
+                text='Number of Accidents',
+                font=dict(
+                    size=25, color='lightblue',  weight='bold'   
+                )
+            ),
+            tickfont=dict(
+                size=20, color='yellow' , 
+            ),
+            linecolor='white', linewidth=2, 
+        ),
+    )
+
     return fig
 
 df['Start_Time'] = pd.to_datetime(df['Start_Time'])
@@ -314,44 +360,56 @@ layout = html.Div([
         ], id='ct-container'
     ),
 
-    html.H2('Number of Accidents over Time'),
-    dcc.RadioItems(
-        id='radioitems',
-        options=[
-            {'label': 'Hour', 'value': 'Hour'},
-            {'label': 'DayOfTheMonth', 'value': 'DayOfTheMonth'},
-            {'label': 'Monthly', 'value': 'Monthly'}
-        ],
-        value='DayOfTheMonth',
-        inline=True
-    ),
-    html.Div(children=[
+    html.Div([
+        html.H2('Number of Accidents Over Time', id='linegraph-label'),
+        dcc.RadioItems(
+            id='linegraph-radioitems',
+            options=[
+                {'label': 'by Hour', 'value': 'Hour'},
+                {'label': 'by Day', 'value': 'DayOfTheMonth'},
+                {'label': 'by Month', 'value': 'Monthly'}
+            ],
+            value='Monthly',
+            inline=True,
+            className='linegraph-radioitems-container'
+        ),
+        html.Div(children=[
             dcc.Graph(id='linegraph')
-        ], id='linegraph-container'
-    ), 
+        ], id='linegraph-container')
+    ], className='linegraph-container'), 
 
     ##
     # Filter dropdown for weather condition
     # Stacked bar chart for severity and weather conditions
-    html.H2('Accidents by Severity and Weather Conditions'),
     html.Div([
-        html.Label('Weather Condition'),
-        dcc.Dropdown(
-            id='weather-condition-dropdown',
-            options=[
-                {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
-            ] + [{'label': condition, 'value': condition} for condition in
-                ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
-                'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
-            value=['All'],  # Default value
-            multi=True,  # Allow multiple selections
-            style={'width': '300px', 'margin': '0'}
-        ),
+        html.H2('Accidents by Severity and Weather Conditions', id='stackedbar-label'),
+        html.Div([
+            html.Label('Weather Condition'),
+            html.Div([
+                dcc.Dropdown(
+                    id='weather-condition-dropdown',
+                    options=[
+                        {'label': 'All', 'value': 'All'}  # Option to show all weather conditions
+                    ] + [{'label': condition, 'value': condition} for condition in
+                        ['Sand', 'Dust', 'Fog', 'Cloudy', 'Windy', 'Fair', 'Snow', 'Wintry Mix', 'Squall', 'Rain',
+                        'Sleet', 'Hail', 'Thunderstorm', 'Tornado', 'Haze', 'Drizzle', 'Mist', 'Shower', 'Smoke']],
+                    value=['All'],  # Default value
+                    multi=True,  # Allow multiple selections
+                    style={'width': '300px', 'margin': '0'}
+                ),
+                html.Div([
+                    html.Button(
+                        html.I(className='fas fa-filter'), 
+                        id='filter-button',
+                        className='filter-icon-button'
+                    ),
+                ], className='filter-button-container'),
+            ], id='stackedbar-filter-container'),
+        ], id='stackedbar-filters-container'),
         html.Div(children=[
                 dcc.Graph(id='severity-weather-stacked-bar')
             ], id='stackedbarchart-container'
         ),
-        
     ], id='stackedbar-container'), 
 ])
 
@@ -414,7 +472,7 @@ def update_date_range_display(n_clicks, start_date, end_date):
     ],
     [
         Input('submit-button', 'n_clicks'),
-        Input('radioitems', 'value'),
+        Input('linegraph-radioitems', 'value'),
         Input('weather-condition-dropdown', 'value')
     ],
     [
@@ -436,7 +494,7 @@ def update_all_graphs(n_clicks, selected_option, selected_weather_conditions, st
     treemap = create_treemap(filtered_df)
 
     # Update accidents over time graph based on selected option
-    accidents_over_time = create_accidents_over_time_graph(selected_option, filtered_df)
+    accidents_over_time = create_line_graph(selected_option, filtered_df)
     
     # Update stacked bar chart with selected weather conditions
     stacked_bar_chart = create_stacked_bar_chart(filtered_df, selected_weather_conditions)
