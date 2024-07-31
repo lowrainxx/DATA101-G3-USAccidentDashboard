@@ -12,9 +12,56 @@ logging.basicConfig(level=logging.INFO)
 # Register Database
 register_page(__name__, path='/database')
 
+state_mapping = {
+    'IL': 'Illinois', 'CA': 'California', 'VA': 'Virginia', 'OH': 'Ohio', 'PA': 'Pennsylvania', 
+    'SC': 'South Carolina', 'NJ': 'New Jersey', 'NY': 'New York', 'FL': 'Florida', 'NC': 'North Carolina', 
+    'TX': 'Texas', 'AZ': 'Arizona', 'TN': 'Tennessee', 'MA': 'Massachusetts', 'WA': 'Washington', 
+    'AL': 'Alabama', 'KY': 'Kentucky', 'GA': 'Georgia', 'MI': 'Michigan', 'LA': 'Louisiana', 
+    'IN': 'Indiana', 'CT': 'Connecticut', 'MN': 'Minnesota', 'OR': 'Oregon', 'CO': 'Colorado', 
+    'OK': 'Oklahoma', 'NV': 'Nevada', 'MD': 'Maryland', 'UT': 'Utah', 'MO': 'Missouri', 
+    'KS': 'Kansas', 'NM': 'New Mexico', 'AR': 'Arkansas', 'NH': 'New Hampshire', 'NE': 'Nebraska', 
+    'IA': 'Iowa', 'WI': 'Wisconsin', 'RI': 'Rhode Island', 'DE': 'Delaware', 'MS': 'Mississippi', 
+    'ME': 'Maine', 'DC': 'District of Columbia', 'VT': 'Vermont', 'WV': 'West Virginia', 'WY': 'Wyoming', 
+    'ID': 'Idaho', 'ND': 'North Dakota', 'MT': 'Montana', 'SD': 'South Dakota'
+}
+
+import logging
+
+def check_state_values(df):
+    null_states = df['State'].isnull().sum()
+    logging.info(f"Number of null values in 'State': {null_states}")
+
+    empty_states = (df['State'] == '').sum()
+    logging.info(f"Number of empty strings in 'State': {empty_states}")
+
+    two_letter_states = df['State'].str.len() == 2
+    logging.info(f"Number of two-letter values in 'State': {two_letter_states.sum()}")
+
+    invalid_states = df['State'].isnull() | (df['State'] == '') | (df['State'].str.len() == 2)
+    logging.info(f"Number of invalid state values: {invalid_states.sum()}")
+
+    if invalid_states.sum() > 0:
+        raise ValueError(f"Invalid state values found: {invalid_states.sum()}")
+    
+
+
+
 # Load data
 if df is None:
     raise ValueError("database.py : DataFrame is not loaded.")
+
+
+# Apply state mapping
+df['State'] = df['State'].map(state_mapping)
+
+
+# Call this function after loading your DataFrame
+check_state_values(df)
+
+# Replace 'T' with ' ' in datetime columns
+df['Start_Time'] = df['Start_Time'].astype(str).str.replace('T', ' ')
+df['End_Time'] = df['End_Time'].astype(str).str.replace('T', ' ')
+
 
 # Change data types
 # df['Start_Time'] = pd.to_datetime(df['Start_Time'])
@@ -68,15 +115,35 @@ layout = html.Div(
                 'color': 'black',
             },
             style_header={
-                'backgroundColor': 'rgb(230, 230, 230)',
+                'backgroundColor': 'rgb(37, 37, 37)',  # Grey background for header
                 'fontWeight': 'bold',
-                'color': 'black',
+                'color': 'yellow',  # Yellow text color for header
             },
-            style_data_conditional=[{
-                'if': {'state': 'active'},
-                'backgroundColor': 'rgba(0, 0, 0, 0.1)',  # light grey
-                'cursor': 'pointer',
-            }]
+            style_data_conditional=[
+                {
+                    'if': {'state': 'active'},
+                    'backgroundColor': 'rgba(0, 0, 0, 0.1)',  # light grey
+                    'cursor': 'pointer',
+                },
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+                },
+                {
+                    'if': {'row_index': 'even'},
+                    'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+                },
+                {
+                    'if': {
+                        'filter_query': '{row_index} = selected_row',
+                        'column_id': 'any'
+                    },
+                    'backgroundColor': 'rgba(194,242,254)',  # Highlight color for selected row
+                    'color': 'black',
+                }
+            
+            ]
+            
         ),
         html.Div(
             children=[
@@ -116,6 +183,51 @@ layout = html.Div(
     ]
 )
 
+
+# Add a callback to handle row highlighting
+@callback(
+    Output('db-table', 'style_data_conditional'),
+    Input('db-table', 'active_cell')
+)
+def update_styles(active_cell):
+    if active_cell:
+        row = active_cell['row']
+        return [
+            {
+                'if': {'state': 'active'},
+                'backgroundColor': 'rgba(194,242,254)',  # light grey
+                'cursor': 'pointer',
+            },
+            {
+                'if': {'row_index': 'odd'},
+                'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+            },
+            {
+                'if': {'row_index': 'even'},
+                'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+            },
+            {
+                'if': {'row_index': row},
+                'backgroundColor': 'rgba(194,242,254)',  # Highlight color for selected row
+                'color': 'black',
+            }
+        ]
+    return [
+        {
+            'if': {'state': 'active'},
+            'backgroundColor': 'rgba(0, 0, 0, 0.1)',  # light grey
+            'cursor': 'pointer',
+        },
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+        },
+        {
+            'if': {'row_index': 'even'},
+            'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+        }
+    ]
+
 # Load More Rows and Handle Sorting
 @callback(
     Output('db-table', 'data'),
@@ -127,6 +239,11 @@ def load_more_data(n_clicks, sort_by, current_data):
     # Create a copy of the entire dataset
     df_copy = df.copy()
 
+    # Convert datetime columns to strings and replace 'T' with ' '
+    df_copy['Start_Time'] = df_copy['Start_Time'].astype(str).str.replace('T', ' ')
+    df_copy['End_Time'] = df_copy['End_Time'].astype(str).str.replace('T', ' ')
+    
+    
     # Handle sorting
     if sort_by:
         for sort in sort_by:
@@ -148,7 +265,7 @@ def create_details(selected_data):
                     html.P(f"Coordinates {selected_data['Start_Lat']}, {selected_data['Start_Lng']}", className='item-cords'),
                 ], className='detail-main'),
                 html.Div([
-                    html.P(f"State: {selected_data['State']}", className='item item-state'),
+                    html.P(f"State: {state_mapping.get(selected_data['State'], selected_data['State'])}", className='item item-state'),
                     html.P(f"County: {selected_data['County']}", className='item item-county'),
                     html.P(f"City: {selected_data['City']}", className='item item-city'),
                     html.P(f"Street: {selected_data['Street']}", className='item item-street'),
@@ -174,6 +291,7 @@ def create_details(selected_data):
                     ], className='detail-weather-top'),
                 ], className='detail-weather')
             ], className='details-container')
+
 
 # Modal Overlay
 @callback(
@@ -205,14 +323,22 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
             return False, [empty_details, dcc.Graph(figure=placeholder_fig, id='map-graph', style={'height': '300px'})], placeholder_fig, False
 
         if triggered_prop == 'search-button.n_clicks' and search_id:
+            # Check if search_id is numeric, if so, prepend 'A-'
+            if search_id.isnumeric():
+                search_id = f'A-{search_id}'
+            search_id = search_id.lower().replace('a-', '')
+            
             # Find the row with the specified ID in the entire DataFrame
-            search_id = search_id.lower()
-            selected_data = df[df['ID'].astype(str).str.lower() == search_id]
+            selected_data = df[df['ID'].astype(str).str.lower().str.replace('a-', '') == search_id]
             if selected_data.empty:
                 return is_open, dash.no_update, dash.no_update, True  # ID not found
             
             selected_data = selected_data.iloc[0]  # Get the first matching row as a series
 
+            # Convert datetime columns to strings and replace 'T' with ' '
+            selected_data['Start_Time'] = str(selected_data['Start_Time']).replace('T', ' ')
+            selected_data['End_Time'] = str(selected_data['End_Time']).replace('T', ' ')
+        
             details = create_details(selected_data)
 
             # Create the map figure only if lat/lon are present
@@ -243,6 +369,12 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
     if active_cell:
         row = active_cell['row']
         selected_data = derived_virtual_data[row]
+        
+        # Convert datetime columns to strings and replace 'T' with ' '
+        selected_data['Start_Time'] = str(selected_data['Start_Time']).replace('T', ' ')
+        selected_data['End_Time'] = str(selected_data['End_Time']).replace('T', ' ')
+        
+        
         details = create_details(selected_data)
 
         # Create the map figure only if lat/lon are present
