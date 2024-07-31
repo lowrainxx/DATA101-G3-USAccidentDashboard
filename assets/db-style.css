@@ -10,7 +10,7 @@
 
 #search-id-input {
     color: black;
-    font-size: 30px;
+    font-size: 20px;
     padding: 5px 3px;
     margin-top: -5px;
     margin-right: 10px;
@@ -21,14 +21,14 @@
     font-size: 20px;
     margin-left: 3px;
     color: white;
-    background-color: #007bff; /* Add a background color for visibility */
+    background-color: #007bff;
     border: none;
     padding: 5px;
-    border-radius: 5px; /* Optional: round the corners */
+    border-radius: 5px;
 }
 
 #search-button .fas {
-    color: white; /* Ensure the icon color is visible against the background */
+    color: white;
 }
 
 .db-table {
@@ -69,20 +69,23 @@
 .modal-content {
     border-radius: 10px;
     padding: 20px;
-    height: 100%;
-    width: 100%;
-    max-width: 1200px;
-    max-height: 550px;
+    height: 80%; /* Increased height */
+    width: 80%; /* Increased width */
+    max-width: 1500px; /* Increased max-width */
+    max-height: 800px; /* Increased max-height */
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
+    background-color: #282828; /* Dark gray background */
+    color: yellow; /* Text color */
 }
 
 #modal-content {
-    background-color: white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     flex-direction: column;
+    height: 100%; /* Ensure content takes full height */
+    width: 100%; /* Ensure content takes full width */
 }
 
 .modal-header {
@@ -107,6 +110,7 @@
     border: 2px solid black;
     border-radius: 50px;
     cursor: pointer;
+    color: black; /* Text color */
 }
 
 #modal-close-button:hover {
@@ -129,57 +133,58 @@
     flex-grow: 1;
     padding-top: 5px;
     width: 100%;
+    overflow-y: auto; /* Ensure scrolling if content exceeds height */
 }
 
 /* Details container */
 .details-container {
-    padding: auto 10px auto 10px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    height: calc(100% - 300px); /* Adjust height to fit the map */
 }
 
-.detail-main { /* ID, Time, Coordinates */
+.upper-section, .lower-section {
     display: flex;
     justify-content: space-between;
-    margin-bottom: -20px;
+    margin-bottom: 10px;
 }
 
-.detail-address {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: -15px;
+.detail-section {
+    flex: 1;
+    padding: 10px;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    background-color: #383838; /* Darker gray background */
+    color: lightblue; /* Light blue text color */
+}
+
+.detail-section:last-child {
+    border-right: none;
 }
 
 .item-description { /* Accident Description */
     flex: 1;
-    margin-right: 10px;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: -15px;
-}
-
-.detail-other {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: -25px;
 }
 
 .detail-weather {
-    justify-content: column;
+    display: flex;
+    flex-direction: column;
 }
 
-.detail-weather-top, .detail-weather-bottom{
+.detail-weather-top, .detail-weather-bottom {
     display: flex;
     justify-content: space-between;
-}
-
-.detail-weather-top {
-    margin-bottom: -30px;
+    margin-bottom: 10px;
 }
 
 #map-graph {
-    margin-top: 25px;
+    height: 300px; /* Fixed height for the map */
     border: 5px solid black;
     border-radius: 5px;
 }

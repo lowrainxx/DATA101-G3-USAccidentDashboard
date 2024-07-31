@@ -25,38 +25,14 @@ state_mapping = {
     'ID': 'Idaho', 'ND': 'North Dakota', 'MT': 'Montana', 'SD': 'South Dakota'
 }
 
-import logging
-
-def check_state_values(df):
-    null_states = df['State'].isnull().sum()
-    logging.info(f"Number of null values in 'State': {null_states}")
-
-    empty_states = (df['State'] == '').sum()
-    logging.info(f"Number of empty strings in 'State': {empty_states}")
-
-    two_letter_states = df['State'].str.len() == 2
-    logging.info(f"Number of two-letter values in 'State': {two_letter_states.sum()}")
-
-    invalid_states = df['State'].isnull() | (df['State'] == '') | (df['State'].str.len() == 2)
-    logging.info(f"Number of invalid state values: {invalid_states.sum()}")
-
-    if invalid_states.sum() > 0:
-        raise ValueError(f"Invalid state values found: {invalid_states.sum()}")
-    
-
-
-
 # Load data
 if df is None:
     raise ValueError("database.py : DataFrame is not loaded.")
 
 
-# Apply state mapping
-df['State'] = df['State'].map(state_mapping)
-
-
-# Call this function after loading your DataFrame
-check_state_values(df)
+# New State
+df_db = df.copy()
+df_db['State'] = df_db['State'].map(state_mapping)
 
 # Replace 'T' with ' ' in datetime columns
 df['Start_Time'] = df['Start_Time'].astype(str).str.replace('T', ' ')
@@ -68,7 +44,7 @@ df['End_Time'] = df['End_Time'].astype(str).str.replace('T', ' ')
 # df['End_Time'] = pd.to_datetime(df['End_Time'])
 
 # Sort the data by ID
-df_sorted = df.sort_values(by='ID')
+df_sorted = df_db.sort_values(by='ID')
 initial_data = df_sorted.head(1000).to_dict('records')
 
 layout = html.Div(
@@ -127,11 +103,11 @@ layout = html.Div(
                 },
                 {
                     'if': {'row_index': 'odd'},
-                    'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+                    'backgroundColor': 'rgb(255, 255, 229)',  # Light grey for odd rows
                 },
                 {
                     'if': {'row_index': 'even'},
-                    'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+                    'backgroundColor': 'rgb(243, 242, 192)',  # White for even rows
                 },
                 {
                     'if': {
@@ -200,11 +176,11 @@ def update_styles(active_cell):
             },
             {
                 'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+                'backgroundColor': 'rgb(255, 255, 229)',  # Light grey for odd rows
             },
             {
                 'if': {'row_index': 'even'},
-                'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+                'backgroundColor': 'rgb(243, 242, 192)',  # White for even rows
             },
             {
                 'if': {'row_index': row},
@@ -220,11 +196,11 @@ def update_styles(active_cell):
         },
         {
             'if': {'row_index': 'odd'},
-            'backgroundColor': 'rgb(240, 240, 240)',  # Light grey for odd rows
+            'backgroundColor': 'rgb(255, 255, 229)',  # Light grey for odd rows
         },
         {
             'if': {'row_index': 'even'},
-            'backgroundColor': 'rgb(255, 255, 255)',  # White for even rows
+            'backgroundColor': 'rgb(243, 242, 192)',  # White for even rows
         }
     ]
 
@@ -237,60 +213,66 @@ def update_styles(active_cell):
 )
 def load_more_data(n_clicks, sort_by, current_data):
     # Create a copy of the entire dataset
-    df_copy = df.copy()
+    df_db_copy = df_db.copy()
 
     # Convert datetime columns to strings and replace 'T' with ' '
-    df_copy['Start_Time'] = df_copy['Start_Time'].astype(str).str.replace('T', ' ')
-    df_copy['End_Time'] = df_copy['End_Time'].astype(str).str.replace('T', ' ')
+    df_db_copy['Start_Time'] = df_db_copy['Start_Time'].astype(str).str.replace('T', ' ')
+    df_db_copy['End_Time'] = df_db_copy['End_Time'].astype(str).str.replace('T', ' ')
     
     
     # Handle sorting
     if sort_by:
         for sort in sort_by:
-            df_copy = df_copy.sort_values(by=sort['column_id'], ascending=sort['direction'] == 'asc')
+            df_db_copy = df_db_copy.sort_values(by=sort['column_id'], ascending=sort['direction'] == 'asc')
     else:
         # Default sorting by ID ascending
-        df_copy = df_copy.sort_values(by='ID', ascending=True)
+        df_db_copy = df_db_copy.sort_values(by='ID', ascending=True)
     
     # Calculate the number of rows to display
     rows_to_display = (n_clicks + 1) * 1000
-    return df_copy.head(rows_to_display).to_dict('records')
+    return df_db_copy.head(rows_to_display).to_dict('records')
 
 def create_details(selected_data):
     return html.Div([
-                html.Div([
-                    html.P(f"ID: {selected_data['ID']}", className='item-id'),
-                    html.P(f"Start Time: {selected_data['Start_Time']}", className='item-startTime'),
-                    html.P(f"End Time: {selected_data['End_Time']}", className='item-endTime'),
-                    html.P(f"Coordinates {selected_data['Start_Lat']}, {selected_data['Start_Lng']}", className='item-cords'),
-                ], className='detail-main'),
-                html.Div([
-                    html.P(f"State: {state_mapping.get(selected_data['State'], selected_data['State'])}", className='item item-state'),
-                    html.P(f"County: {selected_data['County']}", className='item item-county'),
-                    html.P(f"City: {selected_data['City']}", className='item item-city'),
-                    html.P(f"Street: {selected_data['Street']}", className='item item-street'),
-                    html.P(f"Zipcode: {selected_data['Zipcode']}", className='item item-zipcode'),
-                ], className='detail-address'),
+        html.Div([
+            html.Div([
+                html.P(f"ID: {selected_data['ID']}", className='item-id'),
+                html.P(f"Start Time: {selected_data['Start_Time']}", className='item-startTime'),
+                html.P(f"End Time: {selected_data['End_Time']}", className='item-endTime'),
+                html.P(f"Coordinates: {selected_data['Start_Lat']}, {selected_data['Start_Lng']}", className='item-cords'),
+            ], className='detail-section'),
+            html.Div([
+                html.P(f"State: {state_mapping.get(selected_data['State'], selected_data['State'])}", className='item item-state'),
+                html.P(f"County: {selected_data['County']}", className='item item-county'),
+                html.P(f"City: {selected_data['City']}", className='item item-city'),
+                html.P(f"Street: {selected_data['Street']}", className='item item-street'),
+                html.P(f"Zipcode: {selected_data['Zipcode']}", className='item item-zipcode'),
+            ], className='detail-section'),
+            html.Div([
                 html.P(f"Description: {selected_data['Description']}", className='item-description'),
-                html.Div([
-                    html.P(f"Severity: {selected_data['Severity']}", className='item-severity'),
-                    html.P(f"Weather Condition: {selected_data['Weather_Condition']}", className='item-weather'),
-                ], className='detail-other'),
-                html.Div([
-                    html.Div([
-                        html.P(f"Temperature: {selected_data['Temperature(F)']}F", className='item-temperature'),
-                        html.P(f"Wind Chill: {selected_data['Wind_Chill(F)']}F", className='item-windChill'),
-                        html.P(f"Humidity: {selected_data['Humidity(%)']}%", className='item-humidity'),
-                        html.P(f"Pressure: {selected_data['Pressure(in)']}in", className='item-pressure'),
-                    ], className='detail-weather-top'),
-                    html.Div([
-                        html.P(f"Visibility: {selected_data['Visibility(mi)']}mi", className='item-visibility'),
-                        html.P(f"Wind Direction: {selected_data['Wind_Direction']}", className='item-windDirection'),
-                        html.P(f"Wind Speed: {selected_data['Wind_Speed(mph)']}mph", className='item-windSpeed'),
-                        html.P(f"Precipitation: {selected_data['Precipitation(in)']}in", className='item-precipitation'),
-                    ], className='detail-weather-top'),
-                ], className='detail-weather')
-            ], className='details-container')
+                html.P(f"Severity: {selected_data['Severity']}", className='item-severity'),
+            ], className='detail-section'),
+        ], className='upper-section'),
+        html.Div([
+            html.Div([
+                html.P(f"Weather Condition: {selected_data['Weather_Condition']}", className='item-weather'),
+                html.P(f"Temperature: {selected_data['Temperature(F)']} °F", className='item-temperature'),
+                html.P(f"Wind Chill: {selected_data['Wind_Chill(F)']} °F", className='item-windChill'),
+            ], className='detail-section'),
+            html.Div([
+                html.P(f"Humidity: {selected_data['Humidity(%)']} %", className='item-humidity'),
+                html.P(f"Pressure: {selected_data['Pressure(in)']} in", className='item-pressure'),
+                html.P(f"Visibility: {selected_data['Visibility(mi)']} mi", className='item-visibility'),
+            ], className='detail-section'),
+            html.Div([
+                html.P(f"Wind Direction: {selected_data['Wind_Direction']}", className='item-windDirection'),
+                html.P(f"Wind Speed: {selected_data['Wind_Speed(mph)']} mph", className='item-windSpeed'),
+                html.P(f"Precipitation: {selected_data['Precipitation(in)']} in", className='item-precipitation'),
+            ], className='detail-section'),
+        ], className='lower-section'),
+    ], className='details-container')
+
+  
 
 
 # Modal Overlay
@@ -316,7 +298,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
                 pd.DataFrame({'lat': [], 'lon': []}),
                 lat='lat',
                 lon='lon',
-                zoom=10
+                zoom=20
             )
             placeholder_fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
             empty_details = html.Div([], className='details-container')
@@ -329,7 +311,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
             search_id = search_id.lower().replace('a-', '')
             
             # Find the row with the specified ID in the entire DataFrame
-            selected_data = df[df['ID'].astype(str).str.lower().str.replace('a-', '') == search_id]
+            selected_data = df_db[df_db['ID'].astype(str).str.lower().str.replace('a-', '') == search_id]
             if selected_data.empty:
                 return is_open, dash.no_update, dash.no_update, True  # ID not found
             
@@ -339,6 +321,9 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
             selected_data['Start_Time'] = str(selected_data['Start_Time']).replace('T', ' ')
             selected_data['End_Time'] = str(selected_data['End_Time']).replace('T', ' ')
         
+            # Apply state mapping
+            selected_data['State'] = state_mapping.get(selected_data['State'], selected_data['State'])
+            
             details = create_details(selected_data)
 
             # Create the map figure only if lat/lon are present
@@ -352,7 +337,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
                     lat='lat',
                     lon='lon',
                     text='text',
-                    zoom=10
+                    zoom=20
                 )
                 fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
             else:
@@ -360,7 +345,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
                     pd.DataFrame({'lat': [], 'lon': []}),
                     lat='lat',
                     lon='lon',
-                    zoom=10
+                    zoom=20
                 )
                 fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
 
@@ -374,7 +359,9 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
         selected_data['Start_Time'] = str(selected_data['Start_Time']).replace('T', ' ')
         selected_data['End_Time'] = str(selected_data['End_Time']).replace('T', ' ')
         
-        
+        # Apply state mapping
+        selected_data['State'] = state_mapping.get(selected_data['State'], selected_data['State'])
+
         details = create_details(selected_data)
 
         # Create the map figure only if lat/lon are present
@@ -388,7 +375,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
                 lat='lat',
                 lon='lon',
                 text='text',
-                zoom=10
+                zoom=20
             )
             fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
         else:
@@ -396,7 +383,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
                 pd.DataFrame({'lat': [], 'lon': []}),
                 lat='lat',
                 lon='lon',
-                zoom=10
+                zoom=20
             )
             fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
 
@@ -406,7 +393,7 @@ def display_modal(active_cell, close_clicks, search_clicks, search_id, derived_v
         pd.DataFrame({'lat': [], 'lon': []}),
         lat='lat',
         lon='lon',
-        zoom=10
+        zoom=20
     )
     placeholder_fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0})
     empty_details = html.Div([], className='details-container')
