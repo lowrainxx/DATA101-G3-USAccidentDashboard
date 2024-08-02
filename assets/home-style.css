@@ -204,7 +204,6 @@
 
 #linegraph-radioitems input[type="radio"] {
   margin-right: 5px; /* Space between radio button and label */
-  color: red;
 }
 
 #linegraph-radioitems label {

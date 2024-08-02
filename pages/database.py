@@ -76,8 +76,8 @@ layout = html.Div(
                 {'name': 'End Time', 'id': 'End_Time', 'sortable': True},
                 {'name': 'Severity', 'id': 'Severity', 'sortable': True},
                 {'name': 'State', 'id': 'State', 'sortable': True},
-                {'name': 'County', 'id': 'County'},
-                {'name': 'City', 'id': 'City'},
+                {'name': 'County', 'id': 'County', 'sortable': False},
+                {'name': 'City', 'id': 'City', 'sortable': False},
             ],
             data=initial_data,
             sort_action='custom',
@@ -88,11 +88,11 @@ layout = html.Div(
             style_cell={
                 'textAlign': 'center',
                 'minWidth': '100px', 'width': '100px', 'maxWidth': '100px',
-                'color': 'black',
+                'color': 'black', 'fontSize' : '20px',
             },
             style_header={
                 'backgroundColor': 'rgb(37, 37, 37)',  # Grey background for header
-                'fontWeight': 'bold',
+                'fontWeight': 'bold', 'fontSize' : '25px',
                 'color': 'yellow',  # Yellow text color for header
             },
             style_data_conditional=[
@@ -117,8 +117,18 @@ layout = html.Div(
                     'backgroundColor': 'rgba(194,242,254)',  # Highlight color for selected row
                     'color': 'black',
                 }
-            
-            ]
+            ],
+            style_header_conditional=[
+            {
+                'if': {'column_id': 'any'},
+                'textDecoration': 'none',
+                'color': 'yellow',  # Changing sort indicator color
+            },
+            {
+                'if': {'state': 'selected'},
+                'backgroundColor': 'rgba(255, 255, 204, 0.5)',  # Different background for selected sort column
+            },
+        ],
             
         ),
         html.Div(

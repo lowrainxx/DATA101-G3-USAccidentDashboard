@@ -52,7 +52,7 @@ def create_choropleth(filtered_df):
         color='Accident_Count',
         scope="usa",
         labels={'Accident_Count': 'Accident Count'},
-        color_continuous_scale="cividis",
+        color_continuous_scale="blues",
     )
     fig_choropleth.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', 
